@@ -1023,9 +1023,6 @@ function generateStyledHTML(content) {
 }
 
 //econmey
-
-
-
 const economyFile = 'economy.json';
 
 let economyData = {};
@@ -1197,7 +1194,81 @@ function saveData() {
 
 // chatsave
 
+//tag
+const TAGS_FILE = 'tags.json';
 
+client.once('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
+});
+
+client.on('messageCreate', async (message) => {
+  if (!message.guild || message.author.bot || !message.content.startsWith(prefix)) return;
+
+  const [command, ...args] = message.content.slice(prefix.length).trim().split(/ +/);
+
+  if (command === 'addtag') {
+    if (!message.member.permissions.has('MANAGE_MESSAGES')) {
+      return message.reply('You do not have permission to use this command.');
+    }
+
+    const [tagName, ...tagContent] = args;
+
+    if (!tagName || !tagContent.length) {
+      return message.reply('Please provide a tag name and content.');
+    }
+
+    const tag = tagContent.join(' ');
+
+    try {
+      const tags = await getTags();
+      tags[tagName] = tag;
+      await saveTags(tags);
+      message.reply(`Tag '${tagName}' has been added.`);
+    } catch (error) {
+      console.error('Error adding tag:', error);
+      message.reply('There was an error adding the tag.');
+    }
+  }
+
+  if (command === 'tag') {
+    const tagName = args[0];
+
+    if (!tagName) {
+      return message.reply('Please provide a tag name.');
+    }
+
+    try {
+      const tags = await getTags();
+      const tagContent = tags[tagName];
+      if (tagContent) {
+        message.channel.send(tagContent);
+      } else {
+        message.reply(`Tag '${tagName}' does not exist.`);
+      }
+    } catch (error) {
+      console.error('Error fetching tag:', error);
+      message.reply('There was an error fetching the tag.');
+    }
+  }
+});
+
+async function getTags() {
+  try {
+    const data = await fs.readFile(TAGS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return {};
+    }
+    throw error;
+  }
+}
+
+async function saveTags(tags) {
+  await fs.writeFile(TAGS_FILE, JSON.stringify(tags, null, 2));
+}
+
+// end tags
 
 client.on('messageCreate', async message => {
   if (!message.guild) return;
