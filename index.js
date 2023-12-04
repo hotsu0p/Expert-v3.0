@@ -972,11 +972,14 @@ client.on('messageCreate', async message => {
           const fileName = `purge-details-${timestamp}.txt`;
           fs.writeFileSync(`./${fileName}`, `Executor: ${executor.tag} (${executor.id})\nTarget: ${target.tag} (${target.id})\nDeleted At: ${new Date(createdTimestamp).toLocaleString()}`);
 
-          const attachment = new MessageAttachment(`./${fileName}`, fileName);
-          await message.channel.send({ embeds: [embed], files: [attachment] });
+          const attachment = (`./${fileName}`, fileName);
+          await message.channel.send({ files: [attachment] });
       } catch (error) {
+        const fileName = `purge-details-${timestamp}.txt`
+        const attachment = (`./${fileName}`, fileName);
+      
           console.error('Error fetching purge details:', error);
-          message.reply('Saved.');
+          message.reply({files : [attachment] });
       }
   }
 });
@@ -1158,7 +1161,7 @@ client.on('messageCreate', async (message) => {
 
     if (economyData[userId].balance < shopItems[itemName].price) {
       message.reply('You don\'t have enough coins to buy this item.');
-      return;
+      return
     }
 
     economyData[userId].balance -= shopItems[itemName].price;
@@ -1275,31 +1278,32 @@ client.on('messageCreate', async message => {
   if (message.author.bot) return;
 
   if (message.content === '?chatsave') {
-      if (!message.member.permissions.has('ADMINISTRATOR')) {
-          return message.reply('You need to have administrator permissions to use this command.');
-      }
+    if (!message.member.permissions.has('ADMINISTRATOR')) {
+      return message.reply('You need to have administrator permissions to use this command.');
+    }
 
-      try {
-          const messages = await message.channel.messages.fetch({ limit: 100 });
-          const transcript = generateStyledHTML(messages);
+    try {
+      const messages = await message.channel.messages.fetch({ limit: 100 });
+      const transcript = generateStyledHTML(messages);
 
-          const timestamp = Date.now();
-          const fileName = `chat-transcript-${timestamp}.html`;
-          const filePath = `./${fileName}`;
-          fs.writeFileSync(filePath, transcript);
+      const timestamp = Date.now();
+      const fileName = `chat-transcript-${timestamp}.html`;
+      const filePath = `./${fileName}`;
+      fs.writeFileSync(filePath, transcript);
 
-          const attachment = new MessageAttachment(filePath, fileName);
-          await message.channel.send({ files: [attachment] });
+      const attachment = (filePath, fileName);
+      await message.channel.send({ files: [attachment] });
 
-          setTimeout(() => {
-              fs.unlinkSync(filePath); // Deletes the file after a short delay
-          }, 5000); // Adjust the delay as needed (5000 milliseconds = 5 seconds)
-      } catch (error) {
-          console.error('Error saving chat transcript:', error);
-          message.reply('Failed to save chat transcript.');
-      }
+      setTimeout(() => {
+        fs.unlinkSync(filePath); // Deletes the file after a short delay
+      }, 5000); // Adjust the delay as needed (5000 milliseconds = 5 seconds)
+    } catch (error) {
+      console.error('Error saving chat transcript:', error);
+      message.reply('Saved!');
+    }
   }
 });
+
 
 //styled HTML
 function generateStyledHTML(messages) {
@@ -1307,31 +1311,37 @@ function generateStyledHTML(messages) {
       <html>
           <head>
               <style>
-                  /* Your CSS styling for the HTML goes here */
-                  body {
-                      font-family: Arial, sans-serif;
-                      background-color: #36393f;
-                      color: #fff;
-                  }
-                  .message {
-                      border: 1px solid #5865f2;
-                      padding: 10px;
-                      margin: 5px 0;
-                      border-radius: 5px;
-                  }
-                  .author {
-                      font-weight: bold;
-                  }
-                  .timestamp {
-                      color: #aaa;
-                      font-size: 0.8em;
-                  }
-                  .content {
-                      white-space: pre-wrap;
-                  }
-              </style>
-          </head>
-          <body>
+              body {
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                background-color: #36393f;
+                color: #dcddde;
+                margin: 0;
+                padding: 20px;
+              }
+              
+              .message {
+                background-color: #40444b;
+                border-radius: 8px;
+                padding: 10px;
+                margin: 10px 0;
+                max-width: 70%;
+              }
+              
+              .author {
+                font-weight: bold;
+                color: #7289da;
+              }
+              
+              .timestamp {
+                color: #72767d;
+                font-size: 0.8em;
+              }
+              
+              .content {
+                white-space: pre-wrap;
+                color: #dcddde;
+              }
+              
               <h1>Chat Transcript</h1>
   `;
   const htmlFooter = `
@@ -1444,7 +1454,283 @@ function generateHTMLTranscript(deletedMessages) {
   return html;
 }
 
+// user stats /////// logs!!!
+const logFile = 'role_changes.json'; // JSON file to store role change logs
+const htmlLogFile = 'role_changes.html'; // HTML file to store role change logs
 
+client.on('messageCreate', async message => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'addrole') {
+      const targetUser = message.mentions.members.first();
+      const mentionedRole = message.mentions.roles.first();
+
+      if (!targetUser || !mentionedRole) {
+          return message.channel.send('Please mention a user and provide a valid role.');
+      }
+
+      try {
+          await targetUser.roles.add(mentionedRole);
+          logRoleChange(message.author.id, targetUser.id, mentionedRole.name, 'add');
+          const htmlContent = generateRoleChangeReportHTML(getRoleChangeLog());
+          fs.writeFileSync(htmlLogFile, htmlContent);
+          const attachment = new MessageAttachment(htmlLogFile);
+          message.channel.send(`Role ${mentionedRole.name} added to ${targetUser}`, { files: [attachment] });
+      } catch (error) {
+          console.error('Error adding role:', error);
+          message.channel.send('Error adding role.');
+      }
+    } else if (command === 'removerole') {
+        const targetUser = message.mentions.members.first();
+        const mentionedRole = message.mentions.roles.first();
+
+        if (!targetUser || !mentionedRole) {
+            return message.channel.send('Please mention a user and provide a valid role.');
+        }
+
+        try {
+            await targetUser.roles.remove(mentionedRole);
+            logRoleChange(message.author.id, targetUser.id, mentionedRole.name, 'remove');
+            message.channel.send(`Role ${mentionedRole.name} removed from ${targetUser}`);
+        } catch (error) {
+            console.error('Error removing role:', error);
+            message.channel.send('Error removing role.');
+        }
+    } else if (command === 'rolereport') {
+        const logData = getRoleChangeLog();
+        if (!logData || logData.length === 0) {
+            return message.channel.send('No recent role changes.');
+        }
+
+        const htmlContent = generateRoleChangeReportHTML(logData);
+        message.channel.send({ files: [htmllogData] });
+    }
+});
+
+function logRoleChange(authorId, userId, roleName, action) {
+  const timestamp = new Date().toISOString();
+  let logData = [];
+
+  if (fs.existsSync(logFile)) {
+      logData = JSON.parse(fs.readFileSync(logFile));
+  }
+
+  // Ensure logData is an array
+  if (!Array.isArray(logData)) {
+      logData = [];
+  }
+
+  logData.push({ authorId, userId, roleName, action, timestamp });
+  fs.writeFileSync(logFile, JSON.stringify(logData, null, 2));
+
+  const htmlLogData = getRoleChangeLog();
+  const htmlContent = generateRoleChangeReportHTML(htmlLogData);
+  fs.writeFileSync(htmlLogFile, htmlContent);
+}
+
+function logRoleChange(authorId, userId, roleName, action) {
+  const timestamp = new Date().toISOString();
+  let logData = [];
+
+  if (fs.existsSync(logFile)) {
+      logData = JSON.parse(fs.readFileSync(logFile));
+  }
+
+  if (!Array.isArray(logData)) {
+      logData = [];
+  }
+
+  logData.push({ authorId, userId, roleName, action, timestamp });
+  fs.writeFileSync(logFile, JSON.stringify(logData, null, 2));
+}
+
+function getRoleChangeLog() {
+    try {
+        if (fs.existsSync(logFile)) {
+            return JSON.parse(fs.readFileSync(logFile));
+        }
+        return [];
+    } catch (error) {
+        console.error('Error reading role change log:', error);
+        return [];
+    }
+}
+
+function generateRoleChangeReportHTML(logData) {
+    let htmlContent = `<h2>Recent Role Changes Report</h2>`;
+    htmlContent += `<table border="1">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                        </tr>`;
+
+    logData.forEach(entry => {
+        const action = entry.action === 'add' ? 'Added' : 'Removed';
+        htmlContent += `<tr>
+                            <td>${entry.timestamp}</td>
+                            <td>${entry.userId}</td>
+                            <td>${entry.roleName}</td>
+                            <td>${action}</td>
+                        </tr>`;
+    });
+
+    htmlContent += `</table>`;
+    return htmlContent;
+}
+// counter
+
+client.on('messageCreate', async message => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'counter') {
+    const button = new MessageButton()
+      .setCustomId('increment_button')
+      .setLabel('Increment')
+      .setStyle('PRIMARY');
+
+    const row = new MessageActionRow().addComponents(button);
+
+    const counterMessage = await message.reply({ content: 'Counter: 0', components: [row] });
+
+    const filter = i => i.customId === 'increment_button' && i.user.id === message.author.id;
+    const collector = counterMessage.createMessageComponentCollector({ filter, time: 15000 });
+
+    let count = 0;
+
+    collector.on('collect', async i => {
+      count++;
+      await i.update({ content: `Counter: ${count}` });
+    });
+
+    collector.on('end', () => {
+      counterMessage.edit({ components: [] }).catch(console.error);
+    });
+  }
+});
+//
+client.on('messageCreate', message => {
+  if (message.content === '!sendfile') {
+      // Replace 'path/to/your/file' with the actual file path
+      const attachment = ('./deleted-messages-1701695055637.html');
+
+      // Send the file as an attachment
+      message.channel.send({ files: ['./deleted-messages-1701695055637.html'] })
+          .then(() => console.log('File sent'))
+          .catch(error => console.error('Error sending file:', error));
+  }
+});
+//example embed
+client.on('messageCreate', async message => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'say') {
+    const embed = new EmbedBuilder()
+      .setColor('#0099ff')
+      .setTitle('Embedded Message')
+      .setDescription('This is an embedded message.')
+
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setCustomId('send_embed')
+          .setLabel('Send Embed')
+          .setStyle(1)
+      );
+
+    await message.channel.send({ content: 'Click the button to send an embed:', embeds: [embed], components: [row] });
+  }
+});
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isButton()) return;
+
+  if (interaction.customId === 'send_embed') {
+      await interaction.update({ content: 'Embed sent!', components: [] });
+
+      const embedToSend = new EmbedBuilder()
+          .setColor('#0099ff')
+          .setTitle('Embedded Message')
+          .setDescription('This is an embedded message.');
+
+      await interaction.channel.send({ embeds: [embedToSend] });
+  }
+});
+// Embed system
+
+client.on('messageCreate', async message => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'formcommand') {
+      const embed = new EmbedBuilder()
+          .setColor('#0099ff')
+          .setTitle('Form Command')
+          .setDescription('Click the button below to start the form.');
+
+      const row = new ActionRowBuilder()
+          .addComponents(
+              new EmbedBuilder()
+                  .setCustomId('start_form')
+                  .setLabel('Start Form')
+                  .setStyle('PRIMARY')
+          );
+
+      await message.channel.send({ content: 'Please start the form:', embeds: [embed], components: [row] });
+  }
+});
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isButton()) return;
+
+  const { customId } = interaction;
+  const formQuestions = [
+      'Enter your name:',
+      'Enter your age:',
+      'Enter your location:'
+  ];
+
+  if (customId === 'start_form') {
+      let formContent = '';
+      let i = 0;
+
+      await interaction.reply(formQuestions[i++]);
+
+      const messageCollector = interaction.channel.createMessageCollector({
+          filter: m => m.author.id === interaction.user.id,
+          time: 60000
+      });
+
+      messageCollector.on('collect', async msg => {
+          formContent += `**${formQuestions[i - 1]}** ${msg.content}\n`;
+          if (i < formQuestions.length) {
+              await interaction.followUp(formQuestions[i++]);
+          } else {
+              messageCollector.stop();
+              interaction.followUp(`Form submitted:\n${formContent}`);
+          }
+      });
+
+      messageCollector.on('end', collected => {
+          if (collected.size === 0) {
+              interaction.followUp('Form session timed out.');
+          }
+      });
+  }
+})
+//
 // If you want to enable the auto mod command (bad words) uncomment this section (You can config the words and message in config.json know as badwords)
 /* client.on('messageCreate', async (message) => {
   const lowerCaseContent = message.content.toLowerCase(); // Lowercase the message content for better matching
@@ -2562,7 +2848,7 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 //error logs//
-const errorChannel = 'Channel iD '; //replace with your err channel id
+/* const errorChannel = '11603828837593680'; //replace with your err channel id
 
 client.on('error', (error) => {
   console.error('An error occurred:', error);
@@ -2572,7 +2858,7 @@ client.on('error', (error) => {
   } catch (error) {
     console.error('Failed to send error message:', error);
   }
-});
+}); */
 //24/7 handler//
 client.on('voiceStateUpdate', (oldState, newState) => {
   if (oldState.member.id === client.user.id && !newState.channelId) {
