@@ -20,12 +20,13 @@ const { //imports for discord.js
   MessageActionRow,
   MessageButton,
   EmbedBuilder,
+  Embed,
 } = require("discord.js");
 const Discord = ('discord.js')
 const { MessageAttachment } = require('discord.js')
+const warnFilePath = './warns.json';
 const { svg2png } = require('svg-png-converter')
 const { DisTube } = require("distube");
-const prefix = '?'; // You can change the prefix of the bot this by changing this
 const config = require('./config.json');
 const { SpotifyPlugin } = require('@distube/spotify');
 const translate = require('@iamtraction/google-translate');
@@ -38,6 +39,7 @@ const { Routes } = require('discord-api-types/v9');
 const fs = require('fs');
 const logs = require('discord-logs');
 const Topgg = require('@top-gg/sdk');
+const prefix = '?'; // Your bot's command prefix
 const axios = require('axios');
 const fetch = require('node-fetch');
 const readdirSync = require('fs');
@@ -118,7 +120,7 @@ client.on('guildDelete', async (guild) => {
 });
 //uncomnet this if you want to use bardai system 
 ///end ////
-/*client.on(Events.MessageCreate, async message => {
+client.on(Events.MessageCreate, async message => {
     if (message.channel.type === ChannelType.DM) {
         if (message.author.bot) return;
 
@@ -158,7 +160,7 @@ client.on('guildDelete', async (guild) => {
     } else {
         return;
     }
-});*/
+});
 // MODMAIL CODE //
 
 client.on(Events.MessageCreate, async message => {
@@ -470,8 +472,8 @@ client.on(Events.MessageCreate, async message => {
   message.react('📧')
 
 })
-///prefix system
-/// suops dev stuff
+///prefix system//
+
 client.on('messageCreate', (message) => {
   if (!message.content.startsWith(prefix) || message.author.bot) return;
 
@@ -612,7 +614,7 @@ const commandsList = [
     name: 'meme',
     description: 'Fetch a random meme',
     usage: '?meme',
-    category: 'Image',
+    category: 'Fun',
   },
   {
     name: 'sunset',
@@ -638,70 +640,132 @@ const commandsList = [
     usage: '?slowmode <seconds>',
     category: 'Utilities',
   },
+  {
+    name: 'joke',
+    description: 'Get a random joke',
+    usage: '?joke',
+    category: 'Fun',
+  },
+  {
+    name: 'ask',
+    description: 'Ask the AI a question',
+    usage: '?ask <your_question>',
+    category: 'Utilities',
+  },
   // Add more commands as needed
 ];
 
-const groupByCategory = commandsList.reduce((result, command) => {
-  const category = command.category.toLowerCase() || 'uncategorized';
-  if (!result[category]) {
-    result[category] = [];
+const chunkArray = (array, chunkSize) => {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
   }
-  result[category].push(command);
-  return result;
-}, {});
+  return chunks;
+};
 
 client.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
+
   if (message.content.toLowerCase() === '?help') {
-    const categories = Object.keys(groupByCategory);
+    // Display categories for help
+    const categories = [...new Set(commandsList.map((command) => command.category))];
     const embed = new EmbedBuilder()
       .setColor('#3498db')
       .setTitle('Command Categories')
-      .setDescription('List of available command categories:')
+      .setDescription('List of available categories:')
       .addFields(categories.map((category) => {
-        return { name: category.charAt(0).toUpperCase() + category.slice(1), value: `\`${category}\``, inline: true };
+        return { name: category, value: `Use ?help ${category.toLowerCase()} for commands in this category` };
       }));
-
     message.channel.send({ embeds: [embed] });
-  } else if (message.content.toLowerCase().startsWith('?help')) {
-    const requestedCategory = message.content.toLowerCase().split('?help ')[1].trim();
-    const category = Object.keys(groupByCategory).find(
-      (key) => key === requestedCategory || key.charAt(0).toUpperCase() + key.slice(1) === requestedCategory
-    );
+  } else {
+    // Handle commands based on categories
+    const commandCategory = message.content.toLowerCase().split(' ')[1];
+    const filteredCommands = commandsList.filter((command) =>
+      command.category.toLowerCase() === commandCategory.toLowerCase());
 
-    if (!category) {
-      message.reply('Category not found.');
-      return;
-    }
+  
 
-    const commands = groupByCategory[category];
+    const pages = chunkArray(filteredCommands, 5);
+    let currentPage = 0;
 
     const embed = new EmbedBuilder()
       .setColor('#3498db')
-      .setTitle(`${category.charAt(0).toUpperCase() + category.slice(1)} Commands`)
-      .setDescription(`List of commands under ${category}:`)
-      .addFields(commands.map((command) => {
+      .setTitle(`Commands in ${commandCategory}`)
+      .setDescription('List of available commands:')
+      .setFooter({ text: `Page ${currentPage + 1}/${pages.length}` });
+
+    embed.addFields(pages[currentPage].map((command) => {
+      return { name: command.name, value: `**Description:** ${command.description}\n**Usage:** ${command.usage}` };
+    }));
+
+    const helpMessage = await message.channel.send({ embeds: [embed] });
+
+    if (pages.length > 1) {
+      await helpMessage.react('⬅️');
+      await helpMessage.react('➡️');
+    }
+
+    const filter = (reaction, user) => ['⬅️', '➡️'].includes(reaction.emoji.name) && user.id === message.author.id;
+    const collector = helpMessage.createReactionCollector({ filter, time: 60000 });
+
+    collector.on('collect', async (reaction) => {
+      reaction.users.remove(message.author).catch(console.error);
+
+      if (reaction.emoji.name === '➡️' && currentPage < pages.length - 1) {
+        currentPage++;
+      } else if (reaction.emoji.name === '⬅️' && currentPage > 0) {
+        currentPage--;
+      }
+
+      embed.fields = [];
+      embed.setFooter({ text: `Page ${currentPage + 1}/${pages.length}` });
+
+      embed.addFields(pages[currentPage].map((command) => {
         return { name: command.name, value: `**Description:** ${command.description}\n**Usage:** ${command.usage}` };
       }));
 
-    message.channel.send({ embeds: [embed] });
-  } else if (message.content.toLowerCase().startsWith('?translate')) {
-    // Implement translation logic here
-    // Extract text and target language from message content
-    // Perform translation and send the translated text as a MessageEmbed
-    // For example:
-    // message.channel.send('Translated text: TranslatedTextHere');
-    message.channel.send('Translation command is under construction.');
-  } else if (message.content.toLowerCase().startsWith('?slowmode')) {
-    // Implement slow mode logic here
-    // Extract the slow mode time from message content
-    // Set slow mode for the channel and send a confirmation message
-    // For example:
-    // message.channel.setRateLimitPerUser(10); // 10 seconds slow mode
-    message.channel.send('Slow mode command is under construction.');
+      await helpMessage.edit({ embeds: [embed] });
+    });
+
+    collector.on('end', () => {
+      helpMessage.reactions.removeAll().catch(console.error);
+    });
   }
 });
+//translate modual
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
 
-//slow mode
+  const args = message.content.toLowerCase().split(' ');
+
+  if (args[0] === '?translate') {
+    const text = args.slice(1, -1).join(' ');
+    const targetLanguage = args[args.length - 1];
+
+    if (!text || !targetLanguage) {
+      return message.reply('Please provide text and the target language for translation.');
+    }
+
+    try {
+      const translation = await translate(text, { to: targetLanguage });
+
+      const translatedText = translation.text ? translation.text : 'Unable to translate';
+
+      const embed = new EmbedBuilder()
+        .setTitle('Translation')
+        .setDescription(`**Original:** ${text}\n**Translated:** ${translatedText}`)
+        
+        .setColor('#00FFFF')
+        .setFooter('Translated using Google Translate');
+
+      message.channel.send({ embeds: [embed] });
+    } catch (error) {
+      console.error('Error translating text:', error);
+      message.reply('An error occurred while translating the text.');
+    }
+  }
+});
+//Slow mode
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
@@ -740,7 +804,7 @@ client.on('messageCreate', async message => {
       const prompt = message.content.slice(`${prefix}ask`.length).trim();
       
       try {
-          const url = `${config.brainShopApiUrl}?bid=${config.brainShopBotId}&key=${config.brainShopApiKey}&uid=1&msg=${encodeURIComponent(prompt)}`; // No need to change these. They are already defined in config.json
+          const url = `${config.brainShopApiUrl}?bid=${config.brainShopBotId}&key=${config.brainShopApiKey}&uid=1&msg=${encodeURIComponent(prompt)}`;
           const response = await fetch(url);
           
           if (response.ok) {
@@ -757,9 +821,502 @@ client.on('messageCreate', async message => {
       }
   }
 });
-//prefix system
+// joke
+client.on('messageCreate', async message => {
+  if (!message.guild) return; // Ignore DMs
+  if (message.author.bot) return; // Ignore bots
 
-//prefix system/////////////////////////////////
+  if (message.content === `${prefix}joke`) {
+      try {
+          const response = await fetch('https://v2.jokeapi.dev/joke/Any?type=single');
+          
+          if (response.ok) {
+              const jokeData = await response.json();
+              const joke = jokeData.joke;
+
+              await message.reply(`Here's a joke: ${joke}`);
+          } else {
+              throw new Error('Failed to fetch joke from the API');
+          }
+      } catch (error) {
+          console.error('Error occurred:', error);
+          await message.reply('An error occurred while fetching the joke.');
+      }
+  }
+});
+// warn and warns checking and sending
+
+if (!fs.existsSync(warnFilePath)) {
+  fs.writeFileSync(warnFilePath, JSON.stringify({}));
+}
+
+client.on('messageCreate', async message => {
+  if (!message.guild || message.author.bot) return;
+
+  const prefix = '?';
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift()?.toLowerCase();
+
+  if (command === 'warn') {
+    if (args.length < 2) {
+      return message.reply('Please provide a user and a reason for the warning.');
+    }
+
+    const user = message.mentions.users.first();
+    if (!user) {
+      return message.reply('Please mention the user you want to warn.');
+    }
+
+    const reason = args.slice(1).join(' ');
+
+    const warnings = JSON.parse(fs.readFileSync(warnFilePath, 'utf-8'));
+
+    warnings[user.id] = warnings[user.id] || [];
+
+    warnings[user.id].push({
+      moderator: message.author.tag,
+      reason,
+      timestamp: new Date().toUTCString()
+    });
+
+    fs.writeFileSync(warnFilePath, JSON.stringify(warnings, null, 2));
+
+    message.reply(`Successfully warned ${user.tag} for: ${reason}`);
+  }
+
+  if (command === 'warns') {
+    const user = message.mentions.users.first();
+    if (!user) {
+      return message.reply('Please mention the user to check their warnings.');
+    }
+
+    const warnings = JSON.parse(fs.readFileSync(warnFilePath, 'utf-8'));
+    const userWarnings = warnings[user.id] || [];
+
+    if (userWarnings.length === 0) {
+      return message.reply(`No warnings found for ${user.tag}.`);
+    }
+
+    const warnList = userWarnings.map(
+      (warning, index) =>
+        `${index + 1}. Moderator: ${warning.moderator}, Reason: ${warning.reason}, Timestamp: ${warning.timestamp}`
+    );
+
+    message.channel.send(`Warnings for ${user.tag}:\n${warnList.join('\n')}`);
+  }
+});
+// purge
+
+client.on('messageCreate', async message => {
+  if (!message.guild) return;
+  if (message.author.bot) return;
+
+  const prefix = '?';
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift()?.toLowerCase();
+
+  if (command === 'purge') {
+      if (!message.member.permissions.has('ADMINISTRATOR')) {
+          return message.reply('You must have administrator permissions to use this command.');
+      }
+
+      const amount = parseInt(args[0]);
+
+      if (isNaN(amount) || amount <= 0 || amount > 100) {
+          return message.reply('Please provide a valid number between 1 and 100 for the amount of messages to delete.');
+      }
+
+      try {
+          const messages = await message.channel.messages.fetch({ limit: amount });
+          await message.channel.bulkDelete(messages);
+
+          const transcript = messages.reduce((acc, msg) => {
+              return acc + `<p>${msg.author.tag} (${msg.author.id}) at ${msg.createdAt.toLocaleString()}:</p>\n<p>${msg.content}</p>\n\n`;
+          }, '');
+
+          const timestamp = Date.now();
+          const fileName = `deleted-messages-${timestamp}.html`;
+          const filePath = `./${fileName}`;
+          fs.writeFileSync(filePath, generateStyledHTML(transcript));
+
+          const attachment = new MessageAttachment(filePath);
+          await message.channel.send({ files: [attachment] });
+
+          setTimeout(() => {
+              fs.unlinkSync(filePath); // Deletes the file after a short delay
+          }, 5000); // Adjust the delay as needed (5000 milliseconds = 5 seconds)
+      } catch (error) {
+          console.error('Error deleting messages:', error);
+          message.reply('Failed to delete messages.');
+      }
+  }
+  if (command === 'checkpurge') {
+      try {
+          const log = await message.guild.fetchAuditLogs({ type: 'MESSAGE_BULK_DELETE', limit: 1 });
+          const entry = log.entries.first();
+
+          if (!entry) {
+              return message.reply('No recent message purges found.');
+          }
+
+          const { executor, target, createdTimestamp } = entry;
+
+          const embed = new MessageEmbed()
+              .setColor('#00FF00')
+              .setTitle('Message Purge Details')
+              .addField('Executor', `${executor.tag} (${executor.id})`)
+              .addField('Target', `${target.tag} (${target.id})`)
+              .addField('Deleted At', new Date(createdTimestamp).toLocaleString());
+
+          const timestamp = Date.now();
+          const fileName = `purge-details-${timestamp}.txt`;
+          fs.writeFileSync(`./${fileName}`, `Executor: ${executor.tag} (${executor.id})\nTarget: ${target.tag} (${target.id})\nDeleted At: ${new Date(createdTimestamp).toLocaleString()}`);
+
+          const attachment = new MessageAttachment(`./${fileName}`, fileName);
+          await message.channel.send({ embeds: [embed], files: [attachment] });
+      } catch (error) {
+          console.error('Error fetching purge details:', error);
+          message.reply('Saved.');
+      }
+  }
+});
+
+// Function to generate styled HTML
+function generateStyledHTML(content) {
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+      <style>
+          body {
+              background-color: #36393f;
+              color: #dcddde;
+              font-family: Arial, sans-serif;
+              padding: 20px;
+              margin: 0;
+          }
+          .message {
+              background-color: #40444b;
+              border-radius: 8px;
+              padding: 10px;
+              margin-bottom: 10px;
+          }
+          .author {
+              font-weight: bold;
+              color: #7289da;
+          }
+          p {
+              margin-bottom: 5px;
+              line-height: 1.5;
+          }
+          p:last-child {
+              margin-bottom: 0;
+          }
+      </style>
+  </head>
+  <body>
+      <div class="message">
+          ${content}
+      </div>
+  </body>
+  </html>`;
+}
+
+//econmey
+
+
+
+const economyFile = 'economy.json';
+
+let economyData = {};
+
+try {
+  economyData = JSON.parse(fs.readFileSync(economyFile));
+} catch (err) {
+  console.error('Error loading economy data:', err);
+}
+
+client.once('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
+});
+
+client.on('messageCreate', async (message) => {
+  if (!message.content.startsWith('?')) return;
+
+  const args = message.content.slice(1).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'balance') {
+    const userId = message.author.id;
+    const userBalance = economyData[userId] ? economyData[userId].balance : 0;
+    message.reply(`Your balance is: 💵 ${userBalance}`);
+  }
+
+  if (command === 'work') {
+    const userId = message.author.id;
+    const earnings = Math.floor(Math.random() * 50) + 20;
+    if (!economyData[userId]) {
+      economyData[userId] = {
+        balance: earnings,
+        job: 'Unemployed',
+      };
+    } else {
+      economyData[userId].balance += earnings;
+    }
+    message.reply(`You worked and earned 💵 ${earnings} coins!`);
+    saveData();
+  }
+
+  if (command === 'setjob') {
+    const userId = message.author.id;
+    const newJob = args.join(' ');
+    if (!economyData[userId]) {
+      message.reply('You need to work first before getting a job!');
+    } else {
+      economyData[userId].job = newJob;
+      message.reply(`Your job has been set to: ${newJob}`);
+      saveData();
+    }
+  }
+
+  if (command === 'daily') {
+    const userId = message.author.id;
+    const lastDaily = economyData[userId]?.lastDaily || 0;
+    const now = Date.now();
+    const cooldown = 24 * 60 * 60 * 1000; // 24 hours cooldown for daily command
+
+    if (now - lastDaily < cooldown) {
+      const timeLeft = (cooldown - (now - lastDaily)) / (1000 * 60 * 60);
+      message.reply(`You've already claimed your daily reward! Come back in ${timeLeft.toFixed(1)} hours.`);
+    } else {
+      const dailyAmount = Math.floor(Math.random() * 100) + 50; // Daily reward between 50 and 150 coins
+      economyData[userId].balance += dailyAmount;
+      economyData[userId].lastDaily = now;
+      message.reply(`You've claimed your daily reward! 💵 ${dailyAmount} coins have been added to your account.`);
+      saveData();
+    }
+  }
+
+  if (command === 'pay') {
+    const userId = message.author.id;
+    const recipient = message.mentions.users.first();
+    const amount = parseInt(args[1]);
+
+    if (!recipient || isNaN(amount) || amount <= 0) {
+      message.reply('Invalid command usage! Use `?pay @user amount`.');
+      return;
+    }
+
+    if (!economyData[userId] || economyData[userId].balance < amount) {
+      message.reply('You don\'t have enough coins for this transaction.');
+      return;
+    }
+
+    economyData[userId].balance -= amount;
+    economyData[recipient.id] = (economyData[recipient.id] || { balance: 0 });
+    economyData[recipient.id].balance += amount;
+    message.reply(`You've paid 💵 ${amount} coins to ${recipient.username}.`);
+    saveData();
+  }
+
+  if (command === 'leaderboard') {
+    const sortedUsers = Object.entries(economyData).sort((a, b) => b[1].balance - a[1].balance);
+    const topUsers = sortedUsers.slice(0, 10); // Display top 10 users
+
+    const leaderboard = topUsers.map(([userId, userData], position) => {
+      const user = client.users.cache.get(userId);
+      return `${position + 1}. ${user ? user.username : 'Unknown'} - 💵 ${userData.balance}`;
+    });
+
+    message.reply(`**Economy Leaderboard**\n${leaderboard.join('\n')}`);
+  }
+
+  if (command === 'shop') {
+    const shopItems = {
+      laptop: { name: 'Laptop', price: 500 },
+      phone: { name: 'Phone', price: 300 },
+      headphones: { name: 'Headphones', price: 150 },
+    };
+
+    const shopList = Object.keys(shopItems)
+      .map(item => `${item}: ${shopItems[item].name} - 💵 ${shopItems[item].price}`)
+      .join('\n');
+
+    message.reply(`**Welcome to the Shop!**\n${shopList}`);
+  }
+
+  if (command === 'buy') {
+    const userId = message.author.id;
+    const itemName = args[0];
+    const shopItems = {
+      laptop: { name: 'Laptop', price: 500 },
+      phone: { name: 'Phone', price: 300 },
+      headphones: { name: 'Headphones', price: 150 },
+    };
+
+    if (!shopItems[itemName]) {
+      message.reply('That item does not exist in the shop!');
+      return;
+    }
+
+    if (economyData[userId].balance < shopItems[itemName].price) {
+      message.reply('You don\'t have enough coins to buy this item.');
+      return;
+    }
+
+    economyData[userId].balance -= shopItems[itemName].price;
+    economyData[userId].inventory = economyData[userId].inventory || [];
+    economyData[userId].inventory.push(shopItems[itemName].name);
+
+    message.reply(`You've successfully bought ${shopItems[itemName].name} for 💵 ${shopItems[itemName].price}.`);
+    saveData();
+  }
+
+  if (command === 'inventory') {
+    const userId = message.author.id;
+    const userInventory = economyData[userId]?.inventory || [];
+
+    if (userInventory.length === 0) {
+      message.reply('Your inventory is empty.');
+    } else {
+      const inventoryList = userInventory.map(item => `• ${item}`).join('\n');
+      message.reply(`**Your Inventory**\n${inventoryList}`);
+    }
+  }
+
+  // Other economy-related commands can be added here
+});
+
+function saveData() {
+  fs.writeFile(economyFile, JSON.stringify(economyData, null, 2), (err) => {
+    if (err) {
+      console.error('Error saving economy data:', err);
+    }
+  });
+}
+
+// chatsave
+
+
+
+client.on('messageCreate', async message => {
+  if (!message.guild) return;
+  if (message.author.bot) return;
+
+  if (message.content === '?chatsave') {
+      if (!message.member.permissions.has('ADMINISTRATOR')) {
+          return message.reply('You need to have administrator permissions to use this command.');
+      }
+
+      try {
+          const messages = await message.channel.messages.fetch({ limit: 100 });
+          const transcript = generateStyledHTML(messages);
+
+          const timestamp = Date.now();
+          const fileName = `chat-transcript-${timestamp}.html`;
+          const filePath = `./${fileName}`;
+          fs.writeFileSync(filePath, transcript);
+
+          const attachment = new MessageAttachment(filePath, fileName);
+          await message.channel.send({ files: [attachment] });
+
+          setTimeout(() => {
+              fs.unlinkSync(filePath); // Deletes the file after a short delay
+          }, 5000); // Adjust the delay as needed (5000 milliseconds = 5 seconds)
+      } catch (error) {
+          console.error('Error saving chat transcript:', error);
+          message.reply('Failed to save chat transcript.');
+      }
+  }
+});
+
+//styled HTML
+function generateStyledHTML(messages) {
+  const htmlHeader = `
+      <html>
+          <head>
+              <style>
+                  /* Your CSS styling for the HTML goes here */
+                  body {
+                      font-family: Arial, sans-serif;
+                      background-color: #36393f;
+                      color: #fff;
+                  }
+                  .message {
+                      border: 1px solid #5865f2;
+                      padding: 10px;
+                      margin: 5px 0;
+                      border-radius: 5px;
+                  }
+                  .author {
+                      font-weight: bold;
+                  }
+                  .timestamp {
+                      color: #aaa;
+                      font-size: 0.8em;
+                  }
+                  .content {
+                      white-space: pre-wrap;
+                  }
+              </style>
+          </head>
+          <body>
+              <h1>Chat Transcript</h1>
+  `;
+  const htmlFooter = `
+          </body>
+      </html>
+  `;
+
+  const messageContent = messages.reduce((acc, msg) => {
+      return acc + `
+          <div class="message">
+              <span class="author">${msg.author.tag}</span>
+              <span class="timestamp">(${msg.createdAt.toLocaleString()})</span>
+              <div class="content">${msg.content}</div>
+          </div>
+      `;
+  }, '');
+
+  return htmlHeader + messageContent + htmlFooter;
+}
+
+//summarize
+client.on('message', async (message) => {
+  if (message.author.bot) return;
+
+  // Handle ?create_report command
+  if (message.content.startsWith('?create_report')) {
+    const channelId = message.content.substring(15).replace('<#', '').replace('>', '');
+    const channel = message.guild.channels.cache.get(channelId);
+
+    if (!channel) {
+      message.channel.send('Invalid channel ID.');
+      return;
+    }
+
+    const reportData = generateReportData(channel);
+    const htmlReport = generateHTMLReport(reportData);
+
+    // Send HTML report as a temporary message
+    const tempMessage = await message.channel.send({
+      files: [{ attachment: Buffer.from(htmlReport), name: 'report.html' }]
+    });
+
+    // Delete temporary message after 5 minutes
+    setTimeout(() => {
+      tempMessage.delete();
+    }, 300000);
+
+    // Store report data and timestamp
+    reports.push({
+      channelId: channel.id,
+      reportData: reportData,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Create a Map to store the server prefixes
 const prefixes = new Map();
 
@@ -804,8 +1361,20 @@ client.on('messageCreate', async (message) => {
     }
   }
 });
+// Function to generate HTML transcript of deleted messages
+function generateHTMLTranscript(deletedMessages) {
+  let html = '<html><head><title>Deleted Messages Transcript</title></head><body>';
 
-// If you want to enable the auto mod command (bad words) uncomment this section (You can config the words and message in config.json)
+  for (const message of deletedMessages) {
+    html += `<p>${message.author.tag}: ${message.content}</p>`;
+  }
+
+  html += '</body></html>';
+  return html;
+}
+
+
+// If you want to enable the auto mod command (bad words) uncomment this section (You can config the words and message in config.json know as badwords)
 /* client.on('messageCreate', async (message) => {
   const lowerCaseContent = message.content.toLowerCase(); // Lowercase the message content for better matching
 
@@ -814,7 +1383,7 @@ client.on('messageCreate', async (message) => {
       const warningMessage = await message.reply(config.warningMessage);
       setTimeout(() => {
         warningMessage.delete().catch(console.error); // Delete the warning message after a short delay
-      }, 5000); // 5000 milliseconds (5 seconds)
+      }, 5000); // 5000 milliseconds (5 seconds) - 1000ms = 1 seccond
 
       await message.delete(); // Delete the message containing the swear word
     } catch (error) {
@@ -822,10 +1391,10 @@ client.on('messageCreate', async (message) => {
     }
   }
 }); */
-//////pend///
+//---pend---
 
 
-/////games 1v1/////
+//games 1v1
 const levelNames2 = ["Unranked", "Bronze", "Silver", "Gold", "Emerald", "Diamond", "Master", "Elite"];
 const discordTranscripts = require('discord-html-transcripts');
 const duelsSchema = require('./Schemas/1v1Schema');
@@ -1175,45 +1744,41 @@ client.on(Events.InteractionCreate, async i => {
  
                   channel.delete();
  
-                  //XP system
- 
+                  // XP system
                   duelsLevelSchema.findOne({ Guild: i.guild.id, User: memberTwo.id }, async (err, data) => {
- 
-                      if (err) throw err;
- 
-                      if (!data) {
-                          duelsLevelSchema.create({
-                              Guild: i.guild.id, 
-                              User: memberTwo.id,
-                              Rank: 100,
-                              Level: 0
-                          })
-                      }
-                  })
- 
+                    if (err) throw err;
+
+                    if (!data) {
+                      await duelsLevelSchema.create({
+                        Guild: i.guild.id,
+                        User: memberTwo.id,
+                        Rank: 100,
+                        Level: 0
+                      });
+                    }
+                  });
+
                   const give = Math.floor(Math.random() * 61) + 80;
- 
+
                   const levelData = await duelsLevelSchema.findOne({ Guild: i.guild.id, User: memberTwo.id });
- 
+
                   if (!levelData) return;
- 
+
                   const levelThresholds = [0, 300, 750, 1250, 1750, 2500, 3500, 5000, 1000000000000000]; // XP thresholds for each level
                   const currentLevel = levelData.Level;
- 
+
                   const nextLevel = currentLevel + 1;
                   const nextLevelThreshold = levelThresholds[nextLevel];
- 
-                  const requiredXP = nextLevelThreshold ? nextLevelThreshold : 0;
- 
+
+                  const requiredXP = nextLevelThreshold || 0;
+
                   if (levelData.Rank + give >= requiredXP) {
- 
-                      levelData.Rank += give;
-                      levelData.Level += 1;
-                      await levelData.save();
- 
+                    levelData.Rank += give;
+                    levelData.Level += 1;
+                    await levelData.save();
                   } else {
-                      levelData.Rank += give;
-                      levelData.save()
+                    levelData.Rank += give;
+                    levelData.save();
                   }
  
                   //XP system take
@@ -1524,61 +2089,48 @@ client.on(Events.GuildMemberAdd, async member => {
 
 
 //end//
+/**
+ * This arrow function runs periodically using setInterval. It fetches banned users from a database and checks if their ban time has expired.
+ * If a ban has expired, it removes the ban from the corresponding guild and deletes the ban entry from the database.
+ */
 setInterval(async () => {
- 
+  try {
     const bans = await banschema.find();
-    if(!bans) return;
-    else {
-        bans.forEach(async ban => {
- 
-            if (ban.Time > Date.now()) return;
- 
-            let server = await client.guilds.cache.get(ban.Guild);
-            if (!server) {
-                console.log('no server')
-                return await banschema.deleteMany({
-                    Guild: server.id
-                });
- 
-            }
- 
-            await server.bans.fetch().then(async bans => {
- 
-                if (bans.size === 0) {
-                    console.log('bans were 0')
- 
-                    return await banschema.deleteMany({
-                        Guild: server.id
-                    });
- 
- 
- 
-                } else {
- 
-                    let user = client.users.cache.get(ban.User)
-                    if (!user) {
-                        console.log('no user found')
-                        return await banschema.deleteMany({
-                            User: ban.User,
-                            Guild: server.id
-                        });
-                    }
- 
-                    await server.bans.remove(ban.User).catch(err => {
-                        console.log('couldnt unban')
-                        return;
-                    })
- 
-                    await banschema.deleteMany({
-                        User: ban.User,
-                        Guild: server.id
-                    });
- 
-                }
-            })
-        })
+    if (!bans) return;
+
+    for (const ban of bans) {
+      if (ban.Time > Date.now()) continue;
+
+      const server = await client.guilds.cache.get(ban.Guild);
+      if (!server) {
+        console.log('No server found');
+        await banschema.deleteMany({ Guild: ban.Guild });
+        continue;
+      }
+
+      const guildBans = await server.bans.fetch();
+      if (guildBans.size === 0) {
+        console.log('No bans found');
+        await banschema.deleteMany({ Guild: ban.Guild });
+        continue;
+      }
+
+      const user = client.users.cache.get(ban.User);
+      if (!user) {
+        console.log('No user found');
+        await banschema.deleteMany({ User: ban.User, Guild: ban.Guild });
+        continue;
+      }
+
+      await server.bans.remove(ban.User).catch((err) => {
+        console.log('Could not unban');
+      });
+
+      await banschema.deleteMany({ User: ban.User, Guild: ban.Guild });
     }
- 
+  } catch (error) {
+    console.error(error);
+  }
 }, 30000);
 
 //end///
@@ -1587,7 +2139,7 @@ setInterval(async () => {
 
 
 
-const configuration = new Configuration({
+/* const configuration = new Configuration({
   apiKey: 'your_openai_api_key'
 });
 const openai = new OpenAIApi(configuration);
@@ -1644,7 +2196,7 @@ client.on('messageCreate', async (message) => {
   } catch (error) {
     console.log(`ERR: ${error}`);
   }
-});
+}); */
 
 
 
@@ -1937,6 +2489,7 @@ client.on(Events.MessageCreate, async (message) => {
     return message.react(`❌`);
   }
 });
+
 //error logs//
 const errorChannel = 'Channel iD '; //replace with your err channel id
 
@@ -1949,7 +2502,7 @@ client.on('error', (error) => {
     console.error('Failed to send error message:', error);
   }
 });
-//224/7 handler//
+//24/7 handler//
 client.on('voiceStateUpdate', (oldState, newState) => {
   if (oldState.member.id === client.user.id && !newState.channelId) {
     const guildId = oldState.guild.id;
@@ -2010,7 +2563,7 @@ client.on('guildDelete', async (guild) => {
 client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.inGuild()) return;
     if (!interaction.isCommand()) return;
-    const channel = await client.channels.cache.get('110115438720'); //replace with your server commands logs channel id
+    const channel = await client.channels.cache.get('1159484891268907069'); //replace with your server commands logs channel id
     const server = interaction.guild.name;
     const user = interaction.user.username;
     const userID = interaction.user.id;
@@ -2070,3 +2623,64 @@ client.login(client.config.token).then(() => {
 messageLogging(client)
 
 });
+/// html code
+// Function to generate report data
+function generateReportData(channel) {
+  const messageCount = channel.messages.cache.size;
+  const userParticipation = {};
+
+  for (const message of channel.messages.cache.values()) {
+    if (!userParticipation[message.author.id]) {
+      userParticipation[message.author.id] = {
+        username: message.author.tag,
+        messageCount: 0
+      };
+    }
+
+    userParticipation[message.author.id].messageCount++;
+  }
+
+  // TODO: Implement keyword usage analysis
+
+  return {
+    messageCount: messageCount,
+    userParticipation: userParticipation
+  };
+}
+
+// Function to generate HTML report
+function generateHTMLReport(reportData) {
+  let html = '<html><head><title>Channel Activity Report</title></head><body>';
+
+  html += `<h1>Channel Activity Report</h1>
+    <p>Channel: ${channel.name}</p>
+    <p>Report Generated At: ${new Date().toISOString()}</p>`;
+
+  html += `<h2>Message Count</h2>
+    <p>Total Messages: ${reportData.messageCount}</p>`;
+
+  html += `<h2>User Participation</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Message Count</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  for (const user of Object.values(reportData.userParticipation)) {
+    html += `<tr>
+      <td>${user.username}</td>
+      <td>${user.messageCount}</td>
+    </tr>`;
+  }
+
+  html += `</tbody>
+    </table>`;
+
+  // TODO: Add keyword usage section
+
+  html += '</body></html>';
+  return html;
+}
