@@ -1,0 +1,30 @@
+[
+  {
+    "authorId": "969655699154042940",
+    "userId": "1169742802259820694",
+    "roleName": "mod",
+    "action": "add",
+    "timestamp": "2023-12-04T20:23:25.826Z"
+  },
+  {
+    "authorId": "969655699154042940",
+    "userId": "1156945536738410517",
+    "roleName": "mod",
+    "action": "add",
+    "timestamp": "2023-12-05T13:07:32.342Z"
+  },
+  {
+    "authorId": "969655699154042940",
+    "userId": "1161289901694783588",
+    "roleName": "mod",
+    "action": "add",
+    "timestamp": "2023-12-05T13:08:13.369Z"
+  },
+  {
+    "authorId": "969655699154042940",
+    "userId": "1166777971433029717",
+    "roleName": "mod",
+    "action": "add",
+    "timestamp": "2023-12-05T13:08:41.126Z"
+  }
+]

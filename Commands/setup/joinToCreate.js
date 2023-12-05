@@ -38,13 +38,11 @@ module.exports = {
     /**
      * 
      * @param {ChatInputCommandInteraction} interaction 
-     * @param {Client} client 
      */
-    async execute(interaction, client) {
+    async execute(interaction) {
         const { options, guild } = interaction;
 
         const channel = options.getChannel("channel")
-        const role = options.getRole("role")
         const type = options.getString("configuration")
 
         const sub = options.getSubcommand();
@@ -68,9 +66,7 @@ module.exports = {
 
             case "info": {
 
-                let captchaStatus = '`🔴 Off`'
                 let voiceStatus = '`🔴 Off`'
-                let modlogStatus = '`🔴 Off`'
 
                 const voiceCheck = await voiceDB.findOne({GuildID: guild.id})
                 if(voiceCheck) voiceStatus = '`🟢 On`'
@@ -84,10 +80,13 @@ module.exports = {
             case "remove": {
                 switch(type) {
                     case "voice": {
-                        voiceDB.findOneAndDelete({ GuildID: guild.id }, (err) => {
-                            if(err) console.error(err)
-                        });
-                        Response.setDescription("🗑️ Successfully removed the voice system!")
+                        try {
+                            await voiceDB.findOneAndDelete({ GuildID: guild.id });
+                            Response.setDescription("🗑️ Successfully removed the voice system!")
+                        } catch (err) {
+                            console.error('Error occurred while removing the voice system:', err);
+                            // Handle the error or report it to a logging service
+                        }
                     }
                     break;
 

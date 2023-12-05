@@ -4,7 +4,7 @@ module.exports = {
   nombre: 'ping',
   category: 'General',
   description: 'Check the bot\'s ping to the server.',
-  usage: ['<prefix>ping'],
+  usage: ['?ping'],
   run: async (client, message, args) => {
     const responseTime = Date.now() - message.createdTimestamp;
 

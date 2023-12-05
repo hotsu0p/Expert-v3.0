@@ -1,0 +1,23 @@
+{
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    }
+  },
+  "compilerOptions": {
+    "declaration": true,
+    "target": "ES5",
+    "lib": ["ESNext"],
+    "moduleResolution": "node",
+    "sourceMap": true,
+    "pretty": true,
+    "esModuleInterop": true,
+    "outDir":"dist"
+  },
+  "include": [
+    "./src"
+  ],
+  "files": [
+    "./src/index.d.ts"
+  ]
+}

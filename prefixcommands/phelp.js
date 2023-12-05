@@ -4,7 +4,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 module.exports = {
   nombre: 'help',
   description: 'Shows the available prefix commands.',
-  usage: ['<prefix>help'],
+  usage: ['?help'],
   run: async (client, message, args) => {
     const prefixCommandFiles = readdirSync('./prefixcommands').filter(file => file.endsWith('.js'));
     const prefixCommands = [];

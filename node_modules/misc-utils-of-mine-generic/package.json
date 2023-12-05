@@ -1,0 +1,51 @@
+{
+  "name": "misc-utils-of-mine-generic",
+  "version": "0.2.45",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
+  "typings": "dist/src/index.d.ts",
+  "description": "Miscellaneous utilities for JavaScript/TypeScript that I often use",
+  "scripts": {
+    "build": "npm run clean && npx tsc",
+    "build-watch": "npm run clean && npx tsc -w",
+    "clean": "rm -rf dist tmp",
+    "test": "npm run build && npx jest --testPathIgnorePatterns /dist/",
+    "test-js": "npm run build && npx jest --testMatch \"**/__tests__/**/*.js\"",
+    "test-watch": "npm test -- --watch",
+    "docs": "npx typedoc 'src/index.ts' --theme markdown --out api",
+    "format": "npx ts-refactor format \"src/**/*.ts*\" \"test/**/*.ts*\" ./formatCodeSettings.json --tsConfigPath ./tsconfig.json --dontAsk",
+    "organizeImports": "npx ts-refactor organizeImports \"src/**/*.ts*\" \"test/**/*.ts*\" \"test-browser/**/*.ts*\"  ./formatCodeSettings.json --tsConfigPath ./tsconfig.json --dontAsk ",
+    "lint": "npm run organizeImports && npm run format",
+    "all": "npm run clean   && npm run lint &&  npm run build && npm run test-js && npm run test && npm run docs",
+    "all-publish": "npm run all && git commit -a -m \"version patch\" && npm version patch && npm publish",
+    "prepare": "npm run build"
+  },
+  "devDependencies": {
+    "@types/jest": "^26.0.9",
+    "@types/node": "^14.0.27",
+    "jest": "^26.2.2",
+    "ts-jest": "^26.1.4",
+    "ts-morph": "^7.1.3",
+    "ts-refactor": "0.0.11",
+    "tsd-check": "^0.6.0",
+    "typedoc": "^0.18.0",
+    "typedoc-plugin-markdown": "^2.4.0",
+    "typescript": "^3.9.7"
+  },
+  "dependencies": {},
+  "keywords": [
+    "JavaScript",
+    "TypeScript",
+    "utilities",
+    "miscellaneous"
+  ],
+  "author": "Sebastián Gurin",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/cancerberoSgx/misc-utils-of-mine.git"
+  },
+  "license": "MIT",
+  "jest": {
+    "preset": "ts-jest"
+  }
+}

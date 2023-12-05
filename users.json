@@ -1,0 +1,14 @@
+[
+    {
+      "id": "969655699154042940",
+      "username": "USERNAME",
+      "avatarURL": "AVATAR_URL",
+      "joinDate": "JOIN_DATE"
+    },
+    {
+      "id": "ANOTHER_USER_ID",
+      "username": "ANOTHER_USERNAME",
+      "avatarURL": "ANOTHER_AVATAR_URL",
+      "joinDate": "ANOTHER_JOIN_DATE"
+    }
+  ]

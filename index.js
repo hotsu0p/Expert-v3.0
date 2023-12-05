@@ -1,26 +1,37 @@
-const {
+const { //imports for discord.js
   Client,
   GatewayIntentBits,
   Partials,
   Collection,
-    Events,
-    EmbedBuilder,
-    permissions,
-    voiceschemas,
-    AttachmentBuilder,
-    ActionRowBuilder,
-    ButtonBuilder,
-    ButtonStyle,
-    ModalBuilder,
-    TextInputBuilder,
-    PermissionsBitField,
-    TextInputStyle,
-    commands,
-Options,
+  Events,
+  MessageEmbed, // Change EmbedBuilder to MessageEmbed
+  permissions,
+  voiceschemas,
+  AttachmentBuilder,
+  ActionRowBuilder,
+  ButtonBuilder,
+  SelectMenuBuilder,
+  ButtonStyle,
+  ModalBuilder,
+  TextInputBuilder,
+  PermissionsBitField,
+  TextInputStyle,
+  commands,
+  Options,
+  MessageSelectMenu,
+  MessageActionRow,
+  MessageButton,
+  EmbedBuilder,
+  Embed,
 } = require("discord.js");
 const Discord = ('discord.js')
+const { MessageAttachment } = require('discord.js')
+const warnFilePath = './warns.json';
+const { svg2png } = require('svg-png-converter')
 const { DisTube } = require("distube");
+const config = require('./config.json');
 const { SpotifyPlugin } = require('@distube/spotify');
+const translate = require('@iamtraction/google-translate');
 const { SoundCloudPlugin } = require('@distube/soundcloud');
 const { YtDlpPlugin } = require('@distube/yt-dlp');
 const { handleLogs } = require('./Handlers/handleLogs');
@@ -30,13 +41,15 @@ const { Routes } = require('discord-api-types/v9');
 const fs = require('fs');
 const logs = require('discord-logs');
 const Topgg = require('@top-gg/sdk');
+const prefix = '?'; // Your bot's command prefix
 const axios = require('axios');
+const fetch = require('node-fetch');
 const readdirSync = require('fs');
 const banschema = require('./Schemas/ban.js');
 const messageLogging = require('./Handlers/messageLogging');
 const { ChannelType } = require('discord.js');
 //use this if your bot on top.gg
-///const topggAPI = new Topgg.Api('Your_topp.gg_token'); ////if your bot added in top.gg line (1492) uncoment other function
+///const topggAPI = new Topgg.Api('Your_topp.gg_token'); // If your bot added in top.gg line (1492) uncoment other function
 const { loadEvents } = require("./Handlers/eventHandler");
 const { loadCommands } = require("./Handlers/commandHandler");
 const { loadModals } = require("./Handlers/modalHandler");
@@ -109,7 +122,7 @@ client.on('guildDelete', async (guild) => {
 });
 //uncomnet this if you want to use bardai system 
 ///end ////
-/*client.on(Events.MessageCreate, async message => {
+client.on(Events.MessageCreate, async message => {
     if (message.channel.type === ChannelType.DM) {
         if (message.author.bot) return;
 
@@ -120,8 +133,8 @@ client.on('guildDelete', async (guild) => {
             url: 'https://google-bard1.p.rapidapi.com/',
             headers: {
                 text: message.content,
-                'x-RapidAPI-key': 'api of rapid ,//enter your own api	
-                'x-RapidAPI-Host': 'google-bard1.p.rapidapi.com'
+                'x-RapidAPI-key': 'api of rapid ,//enter your own api',	
+                'x-RapidAPI-Host': 'google-bard1.p.rapidapi.com',
             }
         };
 
@@ -149,7 +162,7 @@ client.on('guildDelete', async (guild) => {
     } else {
         return;
     }
-});*/
+});
 // MODMAIL CODE //
 
 client.on(Events.MessageCreate, async message => {
@@ -463,9 +476,930 @@ client.on(Events.MessageCreate, async message => {
 })
 ///prefix system//
 
+client.on('messageCreate', (message) => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'devtest') {
+    const replyMessage = `The bot is working and online!\n My Prefix is: ${prefix}\n My Ping is: ${client.ws.ping}ms\n My Uptime is: ${client.uptime}ms\n I am in ${client.guilds.cache.size} servers!`;
+    message.reply(replyMessage);
+  }
+});
+
+client.on('messageCreate', (message) => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'dev') {
+    const replyMessage = `The bot is owned by:\n- shykh69\n- typedrago\n\nDeveloped by:\n- Hotsuop\n- Titsou™!`;
+    message.reply(replyMessage);
+  }
+});
+// Random memme with ?meme
+client.on('messageCreate', async (message) => {
+  if (message.content.toLowerCase() === '?meme') {
+    try {
+      const response = await fetch('https://www.reddit.com/r/memes/random/.json');
+      const data = await response.json();
+      const meme = data[0].data.children[0].data;
+
+      const memeTitle = meme.title;
+      const memeImage = meme.url;
+
+      message.channel.send({ content: memeTitle, files: [memeImage] });
+    } catch (error) {
+      console.error('Error fetching the meme:', error);
+      message.reply('There was an error while fetching the meme.');
+    }
+  }
+});
+// sunset image with ?sunset
+client.on('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
+});
+
+client.on('messageCreate', async (message) => {
+  if (message.content.toLowerCase() === '?sunset') {
+    try {
+      const response = await fetch(`https://api.unsplash.com/photos/random?query=sunset&orientation=landscape&client_id=dO6I6GGAh84-fQdTHpAUH2kzeLbd2rxALb-GUL9a7Ic`);
+      const data = await response.json();
+      const sunsetImage = data.urls.regular;
+
+      message.channel.send(sunsetImage);
+    } catch (error) {
+      console.error('Error fetching the sunset image:', error);
+      message.reply('There was an error while fetching the sunset image.');
+    }
+  }
+});
+// weather commannd
+client.on('messageCreate', async (message) => {
+  if (message.content.startsWith('?weather')) {
+    const args = message.content.split(' ');
+    if (args.length < 2) {
+      message.reply('Please specify a location. Example: `?weather London`');
+      return;
+    }
+
+    args.shift(); // Remove the command ('?weather')
+    const location = args.join(' '); // Join the remaining args as the location
+
+    try {
+      const response = await axios.get(`https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(location)}&appid=cde77657814616656ba0de9fec623ed1&units=metric`);
+      const weatherData = response.data;
+
+      const weatherDescription = weatherData.weather[0].description;
+      const temperature = weatherData.main.temp;
+      const humidity = weatherData.main.humidity;
+      const windSpeed = weatherData.wind.speed;
+
+      const weatherInfo = `Weather in ${location}: ${weatherDescription}\nTemperature: ${temperature}°C\nHumidity: ${humidity}%\nWind Speed: ${windSpeed} m/s`;
+
+      message.channel.send(weatherInfo);
+    } catch (error) {
+      console.error('Error fetching weather:', error);
+      message.reply('There was an error while fetching the weather - Did you spell the location correctly?');
+    }
+  }
+});
+// server info (prefix)
+client.on('messageCreate', async (message) => {
+  if (message.content.toLowerCase() === '?serverinfo') {
+    const guild = message.guild;
+
+    if (!guild) {
+      console.error('Guild not found.');
+      return;
+    }
+
+    const name = guild.name;
+    const memberCount = guild.memberCount;
+    const owner = guild.ownerId;
+    const serverAge = `<t:${Math.floor(guild.createdTimestamp / 1000)}:R>`;
+
+    const embed = {
+      color: 0x00ff00, // Green color in decimal format (you can change this)
+      title: 'Server Information',
+      fields: [
+        { name: 'Server Name', value: `> ${name}` },
+        { name: 'Server Member Count', value: `> ${memberCount}` },
+        { name: 'Server Owner', value: `> ${owner}` },
+        { name: 'Server Age', value: `> ${serverAge}` }
+      ],
+      timestamp: new Date()
+    };
+
+    try {
+      await message.channel.send({ embeds: [embed] });
+    } catch (error) {
+      console.error('Error sending embed:', error);
+      message.reply('There was an error while sending the server information.');
+    }
+  }
+});
+// above is weather
+// help command
+// is here down
+
+const commandsList = [
+  {
+    name: 'serverinfo',
+    description: 'Get information about the server',
+    usage: '?serverinfo',
+    category: 'Info',
+  },
+  {
+    name: 'meme',
+    description: 'Fetch a random meme',
+    usage: '?meme',
+    category: 'Fun',
+  },
+  {
+    name: 'sunset',
+    description: 'Get a random sunset image',
+    usage: '?sunset',
+    category: 'Image',
+  },
+  {
+    name: 'weather',
+    description: 'Get weather information for a location',
+    usage: '?weather <location>',
+    category: 'Info',
+  },
+  {
+    name: 'translate',
+    description: 'Translate text to a target language',
+    usage: '?translate <text> <target_language>',
+    category: 'Utilities',
+  },
+  {
+    name: 'slowmode',
+    description: 'Set channel slow mode',
+    usage: '?slowmode <seconds>',
+    category: 'Utilities',
+  },
+  {
+    name: 'joke',
+    description: 'Get a random joke',
+    usage: '?joke',
+    category: 'Fun',
+  },
+  {
+    name: 'ask',
+    description: 'Ask the AI a question',
+    usage: '?ask <your_question>',
+    category: 'Utilities',
+  },
+  // Add more commands as needed
+];
+
+const chunkArray = (array, chunkSize) => {
+  const chunks = [];
+  for (let i = 0; i < array.length; i += chunkSize) {
+    chunks.push(array.slice(i, i + chunkSize));
+  }
+  return chunks;
+};
+
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
+
+  if (message.content.toLowerCase() === '?help') {
+    // Display categories for help
+    const categories = [...new Set(commandsList.map((command) => command.category))];
+    const embed = new EmbedBuilder()
+      .setColor('#3498db')
+      .setTitle('Command Categories')
+      .setDescription('List of available categories:')
+      .addFields(categories.map((category) => {
+        return { name: category, value: `Use ?help ${category.toLowerCase()} for commands in this category` };
+      }));
+    message.channel.send({ embeds: [embed] });
+  } else {
+    // Handle commands based on categories
+    const commandCategory = message.content.toLowerCase().split(' ')[1];
+    const filteredCommands = commandsList.filter((command) =>
+      command.category.toLowerCase() === commandCategory.toLowerCase());
+
+  
+
+    const pages = chunkArray(filteredCommands, 5);
+    let currentPage = 0;
+
+    const embed = new EmbedBuilder()
+      .setColor('#3498db')
+      .setTitle(`Commands in ${commandCategory}`)
+      .setDescription('List of available commands:')
+      .setFooter({ text: `Page ${currentPage + 1}/${pages.length}` });
+
+    embed.addFields(pages[currentPage].map((command) => {
+      return { name: command.name, value: `**Description:** ${command.description}\n**Usage:** ${command.usage}` };
+    }));
+
+    const helpMessage = await message.channel.send({ embeds: [embed] });
+
+    if (pages.length > 1) {
+      await helpMessage.react('⬅️');
+      await helpMessage.react('➡️');
+    }
+
+    const filter = (reaction, user) => ['⬅️', '➡️'].includes(reaction.emoji.name) && user.id === message.author.id;
+    const collector = helpMessage.createReactionCollector({ filter, time: 60000 });
+
+    collector.on('collect', async (reaction) => {
+      reaction.users.remove(message.author).catch(console.error);
+
+      if (reaction.emoji.name === '➡️' && currentPage < pages.length - 1) {
+        currentPage++;
+      } else if (reaction.emoji.name === '⬅️' && currentPage > 0) {
+        currentPage--;
+      }
+
+      embed.fields = [];
+      embed.setFooter({ text: `Page ${currentPage + 1}/${pages.length}` });
+
+      embed.addFields(pages[currentPage].map((command) => {
+        return { name: command.name, value: `**Description:** ${command.description}\n**Usage:** ${command.usage}` };
+      }));
+
+      await helpMessage.edit({ embeds: [embed] });
+    });
+
+    collector.on('end', () => {
+      helpMessage.reactions.removeAll().catch(console.error);
+    });
+  }
+});
+//translate modual
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
+
+  const args = message.content.toLowerCase().split(' ');
+
+  if (args[0] === '?translate') {
+    const text = args.slice(1, -1).join(' ');
+    const targetLanguage = args[args.length - 1];
+
+    if (!text || !targetLanguage) {
+      return message.reply('Please provide text and the target language for translation.');
+    }
+
+    try {
+      const translation = await translate(text, { to: targetLanguage });
+
+      const translatedText = translation.text ? translation.text : 'Unable to translate';
+
+      const embed = new EmbedBuilder()
+        .setTitle('Translation')
+        .setDescription(`**Original:** ${text}\n**Translated:** ${translatedText}`)
+        
+        .setColor('#00FFFF')
+        .setFooter('Translated using Google Translate');
+
+      message.channel.send({ embeds: [embed] });
+    } catch (error) {
+      console.error('Error translating text:', error);
+      message.reply('An error occurred while translating the text.');
+    }
+  }
+});
+//Slow mode
+client.on('messageCreate', async (message) => {
+  if (message.author.bot) return;
+
+  const args = message.content.toLowerCase().split(' ');
+
+  if (args[0] === '?slowmode') {
+    if (!message.member.permissions.has('MANAGE_CHANNELS')) {
+      return message.reply('You do not have permission to use this command.');
+    }
+
+    const seconds = parseInt(args[1]);
+
+    if (!seconds || isNaN(seconds)) {
+      return message.reply('Please provide a valid number of seconds for slow mode.');
+    }
+
+    if (seconds < 0 || seconds > 21600) {
+      return message.reply('Slow mode duration must be between 0 and 21600 seconds (6 hours).');
+    }
+
+    try {
+      await message.channel.setRateLimitPerUser(seconds);
+      message.reply(`Slow mode set to ${seconds} seconds.`);
+    } catch (error) {
+      console.error('Error setting slow mode:', error);
+      message.reply('An error occurred while setting slow mode.');
+    }
+  }
+});
+// brain shop ai 
+client.on('messageCreate', async message => {
+  if (!message.guild) return; // Ignore messages from DMs
+  if (message.author.bot) return; // Ignore messages from bots
+
+  if (message.content.startsWith(`${prefix}ask`)) {
+      const prompt = message.content.slice(`${prefix}ask`.length).trim();
+      
+      try {
+          const url = `${config.brainShopApiUrl}?bid=${config.brainShopBotId}&key=${config.brainShopApiKey}&uid=1&msg=${encodeURIComponent(prompt)}`;
+          const response = await fetch(url);
+          
+          if (response.ok) {
+              const data = await response.json();
+              const answer = data.cnt;
+
+              await message.reply(`The AI says: ${answer}`);
+          } else {
+              throw new Error('Failed to fetch data from BrainShop API');
+          }
+      } catch (error) {
+          console.error('Error occurred:', error);
+          await message.reply('An error occurred while processing your request.');
+      }
+  }
+});
+// joke
+client.on('messageCreate', async message => {
+  if (!message.guild) return; // Ignore DMs
+  if (message.author.bot) return; // Ignore bots
+
+  if (message.content === `${prefix}joke`) {
+      try {
+          const response = await fetch('https://v2.jokeapi.dev/joke/Any?type=single');
+          
+          if (response.ok) {
+              const jokeData = await response.json();
+              const joke = jokeData.joke;
+
+              await message.reply(`Here's a joke: ${joke}`);
+          } else {
+              throw new Error('Failed to fetch joke from the API');
+          }
+      } catch (error) {
+          console.error('Error occurred:', error);
+          await message.reply('An error occurred while fetching the joke.');
+      }
+  }
+});
+// warn and warns checking and sending
+
+if (!fs.existsSync(warnFilePath)) {
+  fs.writeFileSync(warnFilePath, JSON.stringify({}));
+}
+
+client.on('messageCreate', async message => {
+  if (!message.guild || message.author.bot) return;
+
+  const prefix = '?';
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift()?.toLowerCase();
+
+  if (command === 'warn') {
+    if (args.length < 2) {
+      return message.reply('Please provide a user and a reason for the warning.');
+    }
+
+    const user = message.mentions.users.first();
+    if (!user) {
+      return message.reply('Please mention the user you want to warn.');
+    }
+
+    const reason = args.slice(1).join(' ');
+
+    const warnings = JSON.parse(fs.readFileSync(warnFilePath, 'utf-8'));
+
+    warnings[user.id] = warnings[user.id] || [];
+
+    warnings[user.id].push({
+      moderator: message.author.tag,
+      reason,
+      timestamp: new Date().toUTCString()
+    });
+
+    fs.writeFileSync(warnFilePath, JSON.stringify(warnings, null, 2));
+
+    message.reply(`Successfully warned ${user.tag} for: ${reason}`);
+  }
+
+  if (command === 'warns') {
+    const user = message.mentions.users.first();
+    if (!user) {
+      return message.reply('Please mention the user to check their warnings.');
+    }
+
+    const warnings = JSON.parse(fs.readFileSync(warnFilePath, 'utf-8'));
+    const userWarnings = warnings[user.id] || [];
+
+    if (userWarnings.length === 0) {
+      return message.reply(`No warnings found for ${user.tag}.`);
+    }
+
+    const warnList = userWarnings.map(
+      (warning, index) =>
+        `${index + 1}. Moderator: ${warning.moderator}, Reason: ${warning.reason}, Timestamp: ${warning.timestamp}`
+    );
+
+    message.channel.send(`Warnings for ${user.tag}:\n${warnList.join('\n')}`);
+  }
+});
+// purge
+
+client.on('messageCreate', async message => {
+  if (!message.guild) return;
+  if (message.author.bot) return;
+
+  const prefix = '?';
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift()?.toLowerCase();
+
+  if (command === 'purge') {
+      if (!message.member.permissions.has('ADMINISTRATOR')) {
+          return message.reply('You must have administrator permissions to use this command.');
+      }
+
+      const amount = parseInt(args[0]);
+
+      if (isNaN(amount) || amount <= 0 || amount > 100) {
+          return message.reply('Please provide a valid number between 1 and 100 for the amount of messages to delete.');
+      }
+
+      try {
+          const messages = await message.channel.messages.fetch({ limit: amount });
+          await message.channel.bulkDelete(messages);
+
+          const transcript = messages.reduce((acc, msg) => {
+              return acc + `<p>${msg.author.tag} (${msg.author.id}) at ${msg.createdAt.toLocaleString()}:</p>\n<p>${msg.content}</p>\n\n`;
+          }, '');
+
+          const timestamp = Date.now();
+          const fileName = `deleted-messages-${timestamp}.html`;
+          const filePath = `./${fileName}`;
+          fs.writeFileSync(filePath, generateStyledHTML(transcript));
+
+          const attachment = new MessageAttachment(filePath);
+          await message.channel.send({ files: [attachment] });
+
+          setTimeout(() => {
+              fs.unlinkSync(filePath); // Deletes the file after a short delay
+          }, 5000); // Adjust the delay as needed (5000 milliseconds = 5 seconds)
+      } catch (error) {
+          console.error('Error deleting messages:', error);
+          message.reply('Failed to delete messages.');
+      }
+  }
+  if (command === 'checkpurge') {
+      try {
+          const log = await message.guild.fetchAuditLogs({ type: 'MESSAGE_BULK_DELETE', limit: 1 });
+          const entry = log.entries.first();
+
+          if (!entry) {
+              return message.reply('No recent message purges found.');
+          }
+
+          const { executor, target, createdTimestamp } = entry;
+
+          const embed = new MessageEmbed()
+              .setColor('#00FF00')
+              .setTitle('Message Purge Details')
+              .addField('Executor', `${executor.tag} (${executor.id})`)
+              .addField('Target', `${target.tag} (${target.id})`)
+              .addField('Deleted At', new Date(createdTimestamp).toLocaleString());
+
+          const timestamp = Date.now();
+          const fileName = `purge-details-${timestamp}.txt`;
+          fs.writeFileSync(`./${fileName}`, `Executor: ${executor.tag} (${executor.id})\nTarget: ${target.tag} (${target.id})\nDeleted At: ${new Date(createdTimestamp).toLocaleString()}`);
+
+          const attachment = (`./${fileName}`, fileName);
+          await message.channel.send({ files: [attachment] });
+      } catch (error) {
+        const fileName = `purge-details-${timestamp}.txt`
+        const attachment = (`./${fileName}`, fileName);
+      
+          console.error('Error fetching purge details:', error);
+          message.reply({files : [attachment] });
+      }
+  }
+});
+
+// Function to generate styled HTML
+function generateStyledHTML(content) {
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+      <style>
+          body {
+              background-color: #36393f;
+              color: #dcddde;
+              font-family: Arial, sans-serif;
+              padding: 20px;
+              margin: 0;
+          }
+          .message {
+              background-color: #40444b;
+              border-radius: 8px;
+              padding: 10px;
+              margin-bottom: 10px;
+          }
+          .author {
+              font-weight: bold;
+              color: #7289da;
+          }
+          p {
+              margin-bottom: 5px;
+              line-height: 1.5;
+          }
+          p:last-child {
+              margin-bottom: 0;
+          }
+      </style>
+  </head>
+  <body>
+      <div class="message">
+          ${content}
+      </div>
+  </body>
+  </html>`;
+}
+
+//econmey
+const economyFile = 'economy.json';
+
+let economyData = {};
+
+try {
+  economyData = JSON.parse(fs.readFileSync(economyFile));
+} catch (err) {
+  console.error('Error loading economy data:', err);
+}
+
+client.once('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
+});
+
+client.on('messageCreate', async (message) => {
+  if (!message.content.startsWith('?')) return;
+
+  const args = message.content.slice(1).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'balance') {
+    const userId = message.author.id;
+    const userBalance = economyData[userId] ? economyData[userId].balance : 0;
+    message.reply(`Your balance is: 💵 ${userBalance}`);
+  }
+
+  if (command === 'work') {
+    const userId = message.author.id;
+    const earnings = Math.floor(Math.random() * 50) + 20;
+    if (!economyData[userId]) {
+      economyData[userId] = {
+        balance: earnings,
+        job: 'Unemployed',
+      };
+    } else {
+      economyData[userId].balance += earnings;
+    }
+    message.reply(`You worked and earned 💵 ${earnings} coins!`);
+    saveData();
+  }
+
+  if (command === 'setjob') {
+    const userId = message.author.id;
+    const newJob = args.join(' ');
+    if (!economyData[userId]) {
+      message.reply('You need to work first before getting a job!');
+    } else {
+      economyData[userId].job = newJob;
+      message.reply(`Your job has been set to: ${newJob}`);
+      saveData();
+    }
+  }
+
+  if (command === 'daily') {
+    const userId = message.author.id;
+    const lastDaily = economyData[userId]?.lastDaily || 0;
+    const now = Date.now();
+    const cooldown = 24 * 60 * 60 * 1000; // 24 hours cooldown for daily command
+
+    if (now - lastDaily < cooldown) {
+      const timeLeft = (cooldown - (now - lastDaily)) / (1000 * 60 * 60);
+      message.reply(`You've already claimed your daily reward! Come back in ${timeLeft.toFixed(1)} hours.`);
+    } else {
+      const dailyAmount = Math.floor(Math.random() * 100) + 50; // Daily reward between 50 and 150 coins
+      economyData[userId].balance += dailyAmount;
+      economyData[userId].lastDaily = now;
+      message.reply(`You've claimed your daily reward! 💵 ${dailyAmount} coins have been added to your account.`);
+      saveData();
+    }
+  }
+
+  if (command === 'pay') {
+    const userId = message.author.id;
+    const recipient = message.mentions.users.first();
+    const amount = parseInt(args[1]);
+
+    if (!recipient || isNaN(amount) || amount <= 0) {
+      message.reply('Invalid command usage! Use `?pay @user amount`.');
+      return;
+    }
+
+    if (!economyData[userId] || economyData[userId].balance < amount) {
+      message.reply('You don\'t have enough coins for this transaction.');
+      return;
+    }
+
+    economyData[userId].balance -= amount;
+    economyData[recipient.id] = (economyData[recipient.id] || { balance: 0 });
+    economyData[recipient.id].balance += amount;
+    message.reply(`You've paid 💵 ${amount} coins to ${recipient.username}.`);
+    saveData();
+  }
+
+  if (command === 'leaderboard') {
+    const sortedUsers = Object.entries(economyData).sort((a, b) => b[1].balance - a[1].balance);
+    const topUsers = sortedUsers.slice(0, 10); // Display top 10 users
+
+    const leaderboard = topUsers.map(([userId, userData], position) => {
+      const user = client.users.cache.get(userId);
+      return `${position + 1}. ${user ? user.username : 'Unknown'} - 💵 ${userData.balance}`;
+    });
+
+    message.reply(`**Economy Leaderboard**\n${leaderboard.join('\n')}`);
+  }
+
+  if (command === 'shop') {
+    const shopItems = {
+      laptop: { name: 'Laptop', price: 500 },
+      phone: { name: 'Phone', price: 300 },
+      headphones: { name: 'Headphones', price: 150 },
+    };
+
+    const shopList = Object.keys(shopItems)
+      .map(item => `${item}: ${shopItems[item].name} - 💵 ${shopItems[item].price}`)
+      .join('\n');
+
+    message.reply(`**Welcome to the Shop!**\n${shopList}`);
+  }
+
+  if (command === 'buy') {
+    const userId = message.author.id;
+    const itemName = args[0];
+    const shopItems = {
+      laptop: { name: 'Laptop', price: 500 },
+      phone: { name: 'Phone', price: 300 },
+      headphones: { name: 'Headphones', price: 150 },
+    };
+
+    if (!shopItems[itemName]) {
+      message.reply('That item does not exist in the shop!');
+      return;
+    }
+
+    if (economyData[userId].balance < shopItems[itemName].price) {
+      message.reply('You don\'t have enough coins to buy this item.');
+      return
+    }
+
+    economyData[userId].balance -= shopItems[itemName].price;
+    economyData[userId].inventory = economyData[userId].inventory || [];
+    economyData[userId].inventory.push(shopItems[itemName].name);
+
+    message.reply(`You've successfully bought ${shopItems[itemName].name} for 💵 ${shopItems[itemName].price}.`);
+    saveData();
+  }
+
+  if (command === 'inventory') {
+    const userId = message.author.id;
+    const userInventory = economyData[userId]?.inventory || [];
+
+    if (userInventory.length === 0) {
+      message.reply('Your inventory is empty.');
+    } else {
+      const inventoryList = userInventory.map(item => `• ${item}`).join('\n');
+      message.reply(`**Your Inventory**\n${inventoryList}`);
+    }
+  }
+
+  // Other economy-related commands can be added here
+});
+
+function saveData() {
+  fs.writeFile(economyFile, JSON.stringify(economyData, null, 2), (err) => {
+    if (err) {
+      console.error('Error saving economy data:', err);
+    }
+  });
+}
+
+// chatsave
+
+//tag
+const TAGS_FILE = 'tags.json';
+
+client.once('ready', () => {
+  console.log(`Logged in as ${client.user.tag}`);
+});
+
+client.on('messageCreate', async (message) => {
+  if (!message.guild || message.author.bot || !message.content.startsWith(prefix)) return;
+
+  const [command, ...args] = message.content.slice(prefix.length).trim().split(/ +/);
+
+  if (command === 'addtag') {
+    if (!message.member.permissions.has('MANAGE_MESSAGES')) {
+      return message.reply('You do not have permission to use this command.');
+    }
+
+    const [tagName, ...tagContent] = args;
+
+    if (!tagName || !tagContent.length) {
+      return message.reply('Please provide a tag name and content.');
+    }
+
+    const tag = tagContent.join(' ');
+
+    try {
+      const tags = await getTags();
+      tags[tagName] = tag;
+      await saveTags(tags);
+      message.reply(`Tag '${tagName}' has been added.`);
+    } catch (error) {
+      console.error('Error adding tag:', error);
+      message.reply('There was an error adding the tag.');
+    }
+  }
+
+  if (command === 'tag') {
+    const tagName = args[0];
+
+    if (!tagName) {
+      return message.reply('Please provide a tag name.');
+    }
+
+    try {
+      const tags = await getTags();
+      const tagContent = tags[tagName];
+      if (tagContent) {
+        message.channel.send(tagContent);
+      } else {
+        message.reply(`Tag '${tagName}' does not exist.`);
+      }
+    } catch (error) {
+      console.error('Error fetching tag:', error);
+      message.reply('There was an error fetching the tag.');
+    }
+  }
+});
+
+async function getTags() {
+  try {
+    const data = await fs.readFile(TAGS_FILE, 'utf-8');
+    return JSON.parse(data);
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return {};
+    }
+    throw error;
+  }
+}
+
+async function saveTags(tags) {
+  await fs.writeFile(TAGS_FILE, JSON.stringify(tags, null, 2));
+}
+
+// end tags
+
+client.on('messageCreate', async message => {
+  if (!message.guild) return;
+  if (message.author.bot) return;
+
+  if (message.content === '?chatsave') {
+    if (!message.member.permissions.has('ADMINISTRATOR')) {
+      return message.reply('You need to have administrator permissions to use this command.');
+    }
+
+    try {
+      const messages = await message.channel.messages.fetch({ limit: 100 });
+      const transcript = generateStyledHTML(messages);
+
+      const timestamp = Date.now();
+      const fileName = `chat-transcript-${timestamp}.html`;
+      const filePath = `./${fileName}`;
+      fs.writeFileSync(filePath, transcript);
+
+      const attachment = (filePath, fileName);
+      await message.channel.send({ files: [attachment] });
+
+      setTimeout(() => {
+        fs.unlinkSync(filePath); // Deletes the file after a short delay
+      }, 5000); // Adjust the delay as needed (5000 milliseconds = 5 seconds)
+    } catch (error) {
+      console.error('Error saving chat transcript:', error);
+      message.reply('Saved!');
+    }
+  }
+});
 
 
-//prefix system/////////////////////////////////
+//styled HTML
+function generateStyledHTML(messages) {
+  const htmlHeader = `
+      <html>
+          <head>
+              <style>
+              body {
+                font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+                background-color: #36393f;
+                color: #dcddde;
+                margin: 0;
+                padding: 20px;
+              }
+              
+              .message {
+                background-color: #40444b;
+                border-radius: 8px;
+                padding: 10px;
+                margin: 10px 0;
+                max-width: 70%;
+              }
+              
+              .author {
+                font-weight: bold;
+                color: #7289da;
+              }
+              
+              .timestamp {
+                color: #72767d;
+                font-size: 0.8em;
+              }
+              
+              .content {
+                white-space: pre-wrap;
+                color: #dcddde;
+              }
+              
+              <h1>Chat Transcript</h1>
+  `;
+  const htmlFooter = `
+          </body>
+      </html>
+  `;
+
+  const messageContent = messages.reduce((acc, msg) => {
+      return acc + `
+          <div class="message">
+              <span class="author">${msg.author.tag}</span>
+              <span class="timestamp">(${msg.createdAt.toLocaleString()})</span>
+              <div class="content">${msg.content}</div>
+          </div>
+      `;
+  }, '');
+
+  return htmlHeader + messageContent + htmlFooter;
+}
+
+//summarize
+client.on('message', async (message) => {
+  if (message.author.bot) return;
+
+  // Handle ?create_report command
+  if (message.content.startsWith('?create_report')) {
+    const channelId = message.content.substring(15).replace('<#', '').replace('>', '');
+    const channel = message.guild.channels.cache.get(channelId);
+
+    if (!channel) {
+      message.channel.send('Invalid channel ID.');
+      return;
+    }
+
+    const reportData = generateReportData(channel);
+    const htmlReport = generateHTMLReport(reportData);
+
+    // Send HTML report as a temporary message
+    const tempMessage = await message.channel.send({
+      files: [{ attachment: Buffer.from(htmlReport), name: 'report.html' }]
+    });
+
+    // Delete temporary message after 5 minutes
+    setTimeout(() => {
+      tempMessage.delete();
+    }, 300000);
+
+    // Store report data and timestamp
+    reports.push({
+      channelId: channel.id,
+      reportData: reportData,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
 // Create a Map to store the server prefixes
 const prefixes = new Map();
 
@@ -510,11 +1444,451 @@ client.on('messageCreate', async (message) => {
     }
   }
 });
+// Function to generate HTML transcript of deleted messages
+function generateHTMLTranscript(deletedMessages) {
+  let html = '<html><head><title>Deleted Messages Transcript</title></head><body>';
 
-//////pend///
+  for (const message of deletedMessages) {
+    html += `<p>${message.author.tag}: ${message.content}</p>`;
+  }
+
+  html += '</body></html>';
+  return html;
+}
+
+// user stats /////// logs!!!
+const logFile = 'role_changes.json'; // JSON file to store role change logs
+const htmlLogFile = 'role_changes.html'; // HTML file to store role change logs
+
+client.on('messageCreate', async message => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'addrole') {
+      const targetUser = message.mentions.members.first();
+      const mentionedRole = message.mentions.roles.first();
+
+      if (!targetUser || !mentionedRole) {
+          return message.channel.send('Please mention a user and provide a valid role.');
+      }
+
+      try {
+          await targetUser.roles.add(mentionedRole);
+          logRoleChange(message.author.id, targetUser.id, mentionedRole.name, 'add');
+          const htmlContent = generateRoleChangeReportHTML(getRoleChangeLog());
+          fs.writeFileSync(htmlLogFile, htmlContent);
+          const attachment = (htmlLogFile);
+          message.channel.send(`Role ${mentionedRole.name} added to ${targetUser}`, { files: [attachment] });
+      } catch (error) {
+          console.error('Error adding role:', error);
+          message.channel.send('Error adding role.');
+      }
+    } else if (command === 'removerole') {
+        const targetUser = message.mentions.members.first();
+        const mentionedRole = message.mentions.roles.first();
+
+        if (!targetUser || !mentionedRole) {
+            return message.channel.send('Please mention a user and provide a valid role.');
+        }
+
+        try {
+            await targetUser.roles.remove(mentionedRole);
+            logRoleChange(message.author.id, targetUser.id, mentionedRole.name, 'remove');
+            message.channel.send(`Role ${mentionedRole.name} removed from ${targetUser}`);
+        } catch (error) {
+            console.error('Error removing role:', error);
+            message.channel.send('Error removing role.');
+        }
+    } else if (command === 'rolereport') {
+        const logData = getRoleChangeLog();
+        if (!logData || logData.length === 0) {
+            return message.channel.send('No recent role changes.');
+        }
+
+        const htmlContent = generateRoleChangeReportHTML(logData);
+        message.channel.send({ files: [htmlLogFile] });
+    }
+});
+
+function logRoleChange(authorId, userId, roleName, action) {
+  const timestamp = new Date().toISOString();
+  let logData = [];
+
+  if (fs.existsSync(logFile)) {
+      logData = JSON.parse(fs.readFileSync(logFile));
+  }
+
+  // Ensure logData is an array
+  if (!Array.isArray(logData)) {
+      logData = [];
+  }
+
+  logData.push({ authorId, userId, roleName, action, timestamp });
+  fs.writeFileSync(logFile, JSON.stringify(logData, null, 2));
+
+  const htmlLogData = getRoleChangeLog();
+  const htmlContent = generateRoleChangeReportHTML(htmlLogData);
+  fs.writeFileSync(htmlLogFile, htmlContent);
+}
+
+function logRoleChange(authorId, userId, roleName, action) {
+  const timestamp = new Date().toISOString();
+  let logData = [];
+
+  if (fs.existsSync(logFile)) {
+      logData = JSON.parse(fs.readFileSync(logFile));
+  }
+
+  if (!Array.isArray(logData)) {
+      logData = [];
+  }
+
+  logData.push({ authorId, userId, roleName, action, timestamp });
+  fs.writeFileSync(logFile, JSON.stringify(logData, null, 2));
+}
+
+function getRoleChangeLog() {
+    try {
+        if (fs.existsSync(logFile)) {
+            return JSON.parse(fs.readFileSync(logFile));
+        }
+        return [];
+    } catch (error) {
+        console.error('Error reading role change log:', error);
+        return [];
+    }
+}
+
+function generateRoleChangeReportHTML(logData) {
+    let htmlContent = `<h2>Recent Role Changes Report</h2>`;
+    htmlContent += `<table border="1">
+                        <tr>
+                            <th>Timestamp</th>
+                            <th>User</th>
+                            <th>Role</th>
+                            <th>Action</th>
+                        </tr>`;
+
+    logData.forEach(entry => {
+        const action = entry.action === 'add' ? 'Added' : 'Removed';
+        htmlContent += `<tr>
+                            <td>${entry.timestamp}</td>
+                            <td>${entry.userId}</td>
+                            <td>${entry.roleName}</td>
+                            <td>${action}</td>
+                        </tr>`;
+    });
+
+    htmlContent += `</table>`;
+    return htmlContent;
+}
+// counter
+
+client.on('messageCreate', async message => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'counter') {
+    const button = new ButtonBuilder()
+      .setCustomId('increment_button')
+      .setLabel('Increment')
+      .setStyle(1);
+
+    const row = new MessageActionRow().addComponents(button);
+
+    const counterMessage = await message.reply({ content: 'Counter: 0', components: [row] });
+
+    const filter = i => i.customId === 'increment_button' && i.user.id === message.author.id;
+    const collector = counterMessage.createMessageComponentCollector({ filter, time: 15000 });
+
+    let count = 0;
+
+    collector.on('collect', async i => {
+      count++;
+      await i.update({ content: `Counter: ${count}` });
+    });
+
+    collector.on('end', () => {
+      counterMessage.edit({ components: [] }).catch(console.error);
+    });
+  }
+});
+//
+client.on('messageCreate', message => {
+  if (message.content === '!sendfile') {
+      // Replace 'path/to/your/file' with the actual file path
+      const attachment = ('./deleted-messages-1701695055637.html');
+
+      // Send the file as an attachment
+      message.channel.send({ files: ['./deleted-messages-1701695055637.html'] })
+          .then(() => console.log('File sent'))
+          .catch(error => console.error('Error sending file:', error));
+  }
+});
+//example embed
+client.on('messageCreate', async message => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'say') {
+      const embed = new MessageEmbed()
+          .setColor('#0099ff')
+          .setTitle('Embedded Message')
+          .setDescription('This is an embedded message.');
+
+      const row = new MessageActionRow()
+          .addComponents(
+              new MessageButton()
+                  .setCustomId('send_embed')
+                  .setLabel('Send Embed')
+                  .setStyle('PRIMARY')
+          );
+
+      await message.channel.send({ content: 'Click the button to send an embed:', embeds: [embed], components: [row] });
+  }
+});
+
+client.on('interactionCreate', async interaction => {
+  if (!interaction.isButton()) return;
+
+  if (interaction.customId === 'send_embed') {
+      await interaction.update({ content: 'Embed sent!', components: [] });
+
+      const embedToSend = new MessageEmbed()
+          .setColor('#0099ff')
+          .setTitle('Embedded Message')
+          .setDescription('This is an embedded message.');
+
+      await interaction.channel.send({ embeds: [embedToSend] });
+  }
+});
+// split///////////////////////////////////////////////////
+client.on('messageCreate', async message => {
+  if (!message.content.startsWith(prefix) || message.author.bot) return;
+
+  const args = message.content.slice(prefix.length).trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === 'helpdrop') {
+      const embed = new EmbedBuilder()
+          .setColor('#0099ff')
+          .setTitle('Help menu')
+          .setDescription('Please select an option from the dropdown menu.');
+
+      const selectMenu = new SelectMenuBuilder()
+          .setCustomId('select_option')
+          .setPlaceholder('Select an option')
+          .addOptions([
+            {
+              label: 'Info',
+              description: 'Get the lowdown with information commands!',
+              value: '?serverinfo - Server details\n?weather <location> - Weather info\n?ping - Bot\'s speed',
+          },
+          
+          {
+              label: 'Image',
+              description: 'Unleash the visual vibes with image commands!',
+              value: '?sunset - Grab a stunning sunset pic\n?meme - Score a hilarious meme',
+          },
+          {
+              label: 'Utilities',
+              description: 'Tools and tricks at your fingertips!',
+              value: '?translate - Translate text. Usage: ?translate <text> <target_language>',
+          },
+          {
+              label: 'Slowmode',
+              description: 'Control the pace with slowmode commands!',
+              value: 'slowmode',
+          },
+          {
+              label: 'Joke',
+              description: 'Tickle your funny bone with joke commands!',
+              value: '?joke - Receive a random joke',
+          },
+          {
+              label: 'Ask',
+              description: 'Unlock the power of AI with interactive commands!',
+              value: '?ask <prompt> - Question the bot and be amazed!',
+          },
+          
+            // Add other categories as needed
+        ]);
+
+          const row = new ActionRowBuilder().addComponents(selectMenu);
+
+      const sentMessage = await message.channel.send({ content: 'Please choose an option:', embeds: [embed], components: [row] });
+
+      const filter = i => i.user.id === message.author.id && i.isSelectMenu();
+      const collector = sentMessage.createMessageComponentCollector({ filter, time: 60000 });
+
+      collector.on('collect', async interaction => {
+          const selectedOption = interaction.values[0];
+          embed.setDescription(`${selectedOption}`);
+
+          await interaction.update({ embeds: [embed] });
+      });
+
+      collector.on('end', collected => {
+          if (collected.size === 0) {
+              message.channel.send('Form session timed out.');
+          }
+      });
+  }
+});
+//ping
+client.on('messageCreate', async (message) => {
+  if (message.content === '?ping') {
+    const ping = client.ws.ping.toFixed(3);
+
+    const row = new ActionRowBuilder()
+      .addComponents(
+        new ButtonBuilder()
+          .setLabel('Add the Bot')
+          .setStyle(5)
+          .setURL('https://top.gg/bot/1023810715250860105'),
+        new ButtonBuilder()
+          .setLabel('Support Server')
+          .setStyle(5)
+          .setURL('https://discord.gg/DYhTZdpznE')
+      );
+
+    const embed = new EmbedBuilder()
+      .setTitle('Bot Ping')
+      .setColor('#7289DA')
+      .setDescription(`Current Ping: ${ping}ms`);
+
+    message.reply({ embeds: [embed], components: [row] });
+  }
+});
+// Mute
+// Load or create a file to store muted users
+let mutedUsers = {};
+const mutedUsersFile = 'mutedUsers.json';
+
+try {
+  mutedUsers = JSON.parse(fs.readFileSync(mutedUsersFile, 'utf8'));
+} catch (err) {
+  console.error("Error reading muted users file:", err);
+}
+
+client.on('messageCreate', async (message) => {
+  if (!message.guild) return;
+
+  if (message.content.startsWith('?mute')) {
+    if (!message.member.permissions.has('MANAGE_ROLES')) {
+      return message.reply("You don't have permission to use this command.");
+    }
+
+    const args = message.content.split(/ +/);
+    const member = message.mentions.members.first();
+    if (!member) return message.reply('Please mention a valid member to mute.');
+
+    const time = args[2]; // You can use this to specify the mute duration
+    const reason = args.slice(3).join(' ');
+
+    const muteRole = message.guild.roles.cache.find(role => role.name === 'Muted');
+    if (!muteRole) return message.reply('Muted role not found. Please create a role named "Muted".');
+
+    try {
+      await member.roles.add(muteRole);
+      mutedUsers[member.id] = {
+        mutedAt: Date.now(),
+        mutedFor: time,
+        reason: reason || 'No reason specified'
+      };
+      fs.writeFileSync(mutedUsersFile, JSON.stringify(mutedUsers, null, 2));
+
+      message.reply(`${member.user.tag} has been muted for ${time}.`);
+    } catch (err) {
+      console.error('Error occurred while muting:', err);
+      message.reply('Failed to mute the member.');
+    }
+  }
+
+  if (message.content.startsWith('?unmute')) {
+    if (!message.member.permissions.has('MANAGE_ROLES')) {
+      return message.reply("You don't have permission to use this command.");
+    }
+
+    const member = message.mentions.members.first();
+    if (!member) return message.reply('Please mention a valid member to unmute.');
+
+    const muteRole = message.guild.roles.cache.find(role => role.name === 'Muted');
+    if (!muteRole) return message.reply('Muted role not found.');
+
+    try {
+      await member.roles.remove(muteRole);
+      if (mutedUsers[member.id]) {
+        delete mutedUsers[member.id];
+        fs.writeFileSync(mutedUsersFile, JSON.stringify(mutedUsers, null, 2));
+      }
+
+      message.reply(`${member.user.tag} has been unmuted.`);
+    } catch (err) {
+      console.error('Error occurred while unmuting:', err);
+      message.reply('Failed to unmute the member.');
+    }
+  }
+});
+//Kick
+client.on('messageCreate', async (message) => {
+  if (!message.guild) return;
+
+  if (message.content.startsWith('?kick')) {
+    if (!message.member.permissions.has('KICK_MEMBERS')) {
+      return message.reply("You don't have permission to use this command.");
+    }
+
+    const args = message.content.split(/ +/);
+    const member = message.mentions.members.first();
+    if (!member) return message.reply('Please mention a valid member to kick.');
+
+    const reason = args.slice(2).join(' ');
+
+    try {
+      await member.kick(reason);
+
+      const embed = new MessageEmbed()
+        .setColor('#ff0000')
+        .setAuthor(`${member.user.tag} was kicked`, member.user.displayAvatarURL())
+        .setDescription(`**Reason:** ${reason || 'No reason specified'}`)
+        .setThumbnail(member.user.displayAvatarURL());
+
+      message.reply({ embeds: [embed] });
+    } catch (err) {
+      console.error('Error occurred while kicking:', err);
+      message.reply('Failed to kick the member.');
+    }
+  }
+});
+//
+// If you want to enable the auto mod command (bad words) uncomment this section (You can config the words and message in config.json know as badwords)
+/* client.on('messageCreate', async (message) => {
+  const lowerCaseContent = message.content.toLowerCase(); // Lowercase the message content for better matching
+
+  if (config.badWords.some(word => lowerCaseContent.includes(word))) {
+    try {
+      const warningMessage = await message.reply(config.warningMessage);
+      setTimeout(() => {
+        warningMessage.delete().catch(console.error); // Delete the warning message after a short delay
+      }, 5000); // 5000 milliseconds (5 seconds) - 1000ms = 1 seccond
+
+      await message.delete(); // Delete the message containing the swear word
+    } catch (error) {
+      console.error('Error:', error);
+    }
+  }
+}); */
+//---pend---
 
 
-/////games 1v1/////
+//games 1v1
 const levelNames2 = ["Unranked", "Bronze", "Silver", "Gold", "Emerald", "Diamond", "Master", "Elite"];
 const discordTranscripts = require('discord-html-transcripts');
 const duelsSchema = require('./Schemas/1v1Schema');
@@ -864,45 +2238,41 @@ client.on(Events.InteractionCreate, async i => {
  
                   channel.delete();
  
-                  //XP system
- 
+                  // XP system
                   duelsLevelSchema.findOne({ Guild: i.guild.id, User: memberTwo.id }, async (err, data) => {
- 
-                      if (err) throw err;
- 
-                      if (!data) {
-                          duelsLevelSchema.create({
-                              Guild: i.guild.id, 
-                              User: memberTwo.id,
-                              Rank: 100,
-                              Level: 0
-                          })
-                      }
-                  })
- 
+                    if (err) throw err;
+
+                    if (!data) {
+                      await duelsLevelSchema.create({
+                        Guild: i.guild.id,
+                        User: memberTwo.id,
+                        Rank: 100,
+                        Level: 0
+                      });
+                    }
+                  });
+
                   const give = Math.floor(Math.random() * 61) + 80;
- 
+
                   const levelData = await duelsLevelSchema.findOne({ Guild: i.guild.id, User: memberTwo.id });
- 
+
                   if (!levelData) return;
- 
+
                   const levelThresholds = [0, 300, 750, 1250, 1750, 2500, 3500, 5000, 1000000000000000]; // XP thresholds for each level
                   const currentLevel = levelData.Level;
- 
+
                   const nextLevel = currentLevel + 1;
                   const nextLevelThreshold = levelThresholds[nextLevel];
- 
-                  const requiredXP = nextLevelThreshold ? nextLevelThreshold : 0;
- 
+
+                  const requiredXP = nextLevelThreshold || 0;
+
                   if (levelData.Rank + give >= requiredXP) {
- 
-                      levelData.Rank += give;
-                      levelData.Level += 1;
-                      await levelData.save();
- 
+                    levelData.Rank += give;
+                    levelData.Level += 1;
+                    await levelData.save();
                   } else {
-                      levelData.Rank += give;
-                      levelData.save()
+                    levelData.Rank += give;
+                    levelData.save();
                   }
  
                   //XP system take
@@ -1213,61 +2583,48 @@ client.on(Events.GuildMemberAdd, async member => {
 
 
 //end//
+/**
+ * This arrow function runs periodically using setInterval. It fetches banned users from a database and checks if their ban time has expired.
+ * If a ban has expired, it removes the ban from the corresponding guild and deletes the ban entry from the database.
+ */
 setInterval(async () => {
- 
+  try {
     const bans = await banschema.find();
-    if(!bans) return;
-    else {
-        bans.forEach(async ban => {
- 
-            if (ban.Time > Date.now()) return;
- 
-            let server = await client.guilds.cache.get(ban.Guild);
-            if (!server) {
-                console.log('no server')
-                return await banschema.deleteMany({
-                    Guild: server.id
-                });
- 
-            }
- 
-            await server.bans.fetch().then(async bans => {
- 
-                if (bans.size === 0) {
-                    console.log('bans were 0')
- 
-                    return await banschema.deleteMany({
-                        Guild: server.id
-                    });
- 
- 
- 
-                } else {
- 
-                    let user = client.users.cache.get(ban.User)
-                    if (!user) {
-                        console.log('no user found')
-                        return await banschema.deleteMany({
-                            User: ban.User,
-                            Guild: server.id
-                        });
-                    }
- 
-                    await server.bans.remove(ban.User).catch(err => {
-                        console.log('couldnt unban')
-                        return;
-                    })
- 
-                    await banschema.deleteMany({
-                        User: ban.User,
-                        Guild: server.id
-                    });
- 
-                }
-            })
-        })
+    if (!bans) return;
+
+    for (const ban of bans) {
+      if (ban.Time > Date.now()) continue;
+
+      const server = await client.guilds.cache.get(ban.Guild);
+      if (!server) {
+        console.log('No server found');
+        await banschema.deleteMany({ Guild: ban.Guild });
+        continue;
+      }
+
+      const guildBans = await server.bans.fetch();
+      if (guildBans.size === 0) {
+        console.log('No bans found');
+        await banschema.deleteMany({ Guild: ban.Guild });
+        continue;
+      }
+
+      const user = client.users.cache.get(ban.User);
+      if (!user) {
+        console.log('No user found');
+        await banschema.deleteMany({ User: ban.User, Guild: ban.Guild });
+        continue;
+      }
+
+      await server.bans.remove(ban.User).catch((err) => {
+        console.log('Could not unban');
+      });
+
+      await banschema.deleteMany({ User: ban.User, Guild: ban.Guild });
     }
- 
+  } catch (error) {
+    console.error(error);
+  }
 }, 30000);
 
 //end///
@@ -1276,7 +2633,7 @@ setInterval(async () => {
 
 
 
-const configuration = new Configuration({
+/* const configuration = new Configuration({
   apiKey: 'your_openai_api_key'
 });
 const openai = new OpenAIApi(configuration);
@@ -1333,7 +2690,7 @@ client.on('messageCreate', async (message) => {
   } catch (error) {
     console.log(`ERR: ${error}`);
   }
-});
+}); */
 
 
 
@@ -1602,61 +2959,34 @@ client.on(Events.MessageCreate, async (message, err) => {
     }
 })
 //guess//
-client.on(Events.MessageCreate, async (message) => {
-
- 
-
-if(message.author.bot) return;
-
- 
-
 const Schema = require('./Schemas/guess');
+const { Action } = require("st.db");
 
- 
+client.on(Events.MessageCreate, async (message) => {
+  if (message.author.bot) return;
 
-const data = await Schema.findOne({channelId: message.channel.id});
+  const data = await Schema.findOne({ channelId: message.channel.id });
 
- 
+  if (!data) return;
 
-if(!data) return;
-
- 
-
-if(data) {
-
- 
-
-if(message.content === `${data.number}`) {
-
-    message.react(`✅`);
-
-    message.reply(`Wow! That was the right number! 🥳`);
-
-    message.pin();
-
- 
-
+  if (message.content === `${data.number}`) {
+    await message.react('✅');
+    await message.reply('Wow! That was the right number! 🥳');
+    await message.pin();
+    await message.channel.send('Successfully deleted number, use `/guess enable` to get a new number!');
     await data.delete();
+  }
 
-    message.channel.send(`Successfully delted number, use \`/guess enable\` to get a new number!`)
-
-} 
-
- 
-
- 
-
-if(message.content !== `${data.number}`) return message.react(`❌`)
-
- 
-
-}
-
- 
-
+  if (isNaN(message.content)) {
+    return;
+  }
+  if (parseInt(message.content) !== data.number) {
+    return message.react(`❌`);
+  }
 });
+
 //error logs//
-const errorChannel = 'Channel iD '; //replace with your err channel id
+/* const errorChannel = '11603828837593680'; //replace with your err channel id
 
 client.on('error', (error) => {
   console.error('An error occurred:', error);
@@ -1666,8 +2996,8 @@ client.on('error', (error) => {
   } catch (error) {
     console.error('Failed to send error message:', error);
   }
-});
-//224/7 handler//
+}); */
+//24/7 handler//
 client.on('voiceStateUpdate', (oldState, newState) => {
   if (oldState.member.id === client.user.id && !newState.channelId) {
     const guildId = oldState.guild.id;
@@ -1728,7 +3058,7 @@ client.on('guildDelete', async (guild) => {
 client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.inGuild()) return;
     if (!interaction.isCommand()) return;
-    const channel = await client.channels.cache.get('110115438720'); //replace with your server commands logs channel id
+    const channel = await client.channels.cache.get('1159484891268907069'); //replace with your server commands logs channel id
     const server = interaction.guild.name;
     const user = interaction.user.username;
     const userID = interaction.user.id;
@@ -1788,3 +3118,64 @@ client.login(client.config.token).then(() => {
 messageLogging(client)
 
 });
+/// html code
+// Function to generate report data
+function generateReportData(channel) {
+  const messageCount = channel.messages.cache.size;
+  const userParticipation = {};
+
+  for (const message of channel.messages.cache.values()) {
+    if (!userParticipation[message.author.id]) {
+      userParticipation[message.author.id] = {
+        username: message.author.tag,
+        messageCount: 0
+      };
+    }
+
+    userParticipation[message.author.id].messageCount++;
+  }
+
+  // TODO: Implement keyword usage analysis
+
+  return {
+    messageCount: messageCount,
+    userParticipation: userParticipation
+  };
+}
+
+// Function to generate HTML report
+function generateHTMLReport(reportData) {
+  let html = '<html><head><title>Channel Activity Report</title></head><body>';
+
+  html += `<h1>Channel Activity Report</h1>
+    <p>Channel: ${channel.name}</p>
+    <p>Report Generated At: ${new Date().toISOString()}</p>`;
+
+  html += `<h2>Message Count</h2>
+    <p>Total Messages: ${reportData.messageCount}</p>`;
+
+  html += `<h2>User Participation</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Username</th>
+          <th>Message Count</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+  for (const user of Object.values(reportData.userParticipation)) {
+    html += `<tr>
+      <td>${user.username}</td>
+      <td>${user.messageCount}</td>
+    </tr>`;
+  }
+
+  html += `</tbody>
+    </table>`;
+
+  // TODO: Add keyword usage section
+
+  html += '</body></html>';
+  return html;
+}
