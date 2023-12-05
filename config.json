@@ -1,15 +1,15 @@
 {
-  "token": "MTE4MDg2Mzg5Njc3MzQ2ODM1MQ.GIVWGe.f2JXOrRvdjSmfOYS01mGczhtmi7QpX4Oj8Ax8o",
-  "mongodb": "mongodb+srv://jwstephenson1000:P8qI8th6twA6k5IH@cluster0.efza6jy.mongodb.net/?retryWrites=true&w=majority&appName=AtlasApp",
-  "apiKey": "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",
+  "token": "",
+  "mongodb": "",
+  "apiKey": "",
   "warningMessage": "Please dont swear here.\n\nThanks!",
   "brainShopApiUrl": "http://api.brainshop.ai/get", 
   "comment": "You dont need to change the above varible",
   "brainShopBotId": "YOUR_BRAINSHOP_BOT_ID_HERE",
   "brainShopApiKey": "YOUR_BRAINSHOP_API_KEY_HERE",
   "Setup": {
-    "SIGHT_ENGINE_APIKEY": "tKEisnh7mvTcdua8pToaKamVyp",
-    "SIGHT_ENGINE_APIUSER": "494609960",
+    "SIGHT_ENGINE_APIKEY": "",
+    "SIGHT_ENGINE_APIUSER": "",
     "PREFIX": "?"
   },
   "badWords": [
