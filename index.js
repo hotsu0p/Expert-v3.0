@@ -603,7 +603,7 @@ client.on('messageCreate', async (message) => {
 // help command
 // is here down
 
-const commandsList = [
+/* const commandsList = [
   {
     name: 'serverinfo',
     description: 'Get information about the server',
@@ -731,8 +731,198 @@ client.on('messageCreate', async (message) => {
       helpMessage.reactions.removeAll().catch(console.error);
     });
   }
-});
+}); */
 //translate modual
+
+client.on("messageCreate", async (message) => {
+  if (message.author.bot) return;
+  if (message.content.startsWith(`?help`)) {
+    // this is the code for the embeds that you will see 
+    let embeds = [
+      new EmbedBuilder().setTitle(`📘 **Help Menu**`).setDescription(`Welcome to the help menu. Use the buttons below to navigate between pages.`).setFields({ name: 'Command', value: '?help and /help', inline: true }, { name: 'Description', value: 'Gives this help menu', inline: true }),
+      new EmbedBuilder().setTitle(`Info commands`).setDescription(`Info commands!`).setFields({ name: 'Command', value: '?Serverinfo\n?weather <location>\n?ping', inline: true }, { name: 'Description', value: 'Gives server info\nGives weather info for a location\n Gives the bots ping', inline: true }),
+      new EmbedBuilder().setTitle(`Image commands!`).setDescription(`Image commands!`).setFields({ name: 'Command', value: '?meme\n?sunset\n\n i will be adding more soon!', inline: true }, { name: 'Description', value: 'Gives a meme\nGives the sunset time of a location\n\n i will be adding more soon!', inline: true }),
+      new EmbedBuilder().setTitle(`Utility commands!`).setDescription(`Utility commands!`).setFields({ name: 'Command', value: '?avatar\n?servericon\n?serverinfo\n?userinfo', inline: true }, { name: 'Description', value: 'Gives the avatar of the member\nGives the server icon\nGives the server info\nGives the user info', inline: true }),
+      new EmbedBuilder().setTitle(`Ai commands!`).setDescription(`Ai commands!`).setFields({ name: 'Command', value: '?ask <text>', inline: true }, { name: 'Description', value: 'Chat with the ai!', inline: true }),
+      new EmbedBuilder().setTitle(`Admin commands`).setDescription(`Admin commands!`).setFields({ name: 'Command', value: '?kick\n?ban\n?mute \n?unmute\n?chatsave\n?addrole\n?removerole\n?slowmode', inline: true }, { name: 'Description', value: 'Kicks a member\nBans a member\nMutes a member\nUnmutes a member\nsaves the last 100 messages of the chat and sends it as an html file.\n adds a role\n removes a role\n Sets the slowmode of the channel', inline: true }),
+      new EmbedBuilder().setTitle(`Support and Invite`).setDescription(`If you need help, you can join the support server. You can also invite the bot to your server.`).setFields({ name: 'Support Server', value: 'https://discord.gg/DYhTZdpznE', inline: true }, { name: 'Invite', value: '[Click here to add the bot to your server!](https://discord.com/api/oauth2/authorize?client_id=1180863896773468351&permissions=8&scope=bot%20applications.commands)', inline: true }),
+      new EmbedBuilder().setTitle(`Credits for develpoping this bot`).setDescription(`Thanks to all who gave me ideas! Most namely <@!1178075092815716503>`).setFields({ name: 'Owners', value: '<@!903237169722834954>\n<@!930450658971234326>\n<@!804418829065125909>', inline: true },{ name: 'Devs', value: '<@!969655699154042940>\n<@!1175040737784643637>\n<@!487546381033013249>', inline: true },{name: 'Feature suggestions', value: 'Ps if you want to give me an idea/feature suggestion send me a dm! Or join our support server and say in chat!', inline: false },{ name: 'Support Server', value: 'https://discord.gg/DYhTZdpznE', inline: true }, { name: 'Invite', value: '[Click here to add the bot to your server!](https://discord.com/api/oauth2/authorize?client_id=845041532694199838&permissions=8&scope=bot%20applications.commands)', inline: true }),
+    ];
+    await pagination(message, embeds);
+  }
+});
+/**
+ *
+ * @param {CommandInteraction} interaction
+ * @param {Array} embeds
+ * Below is the code for the buttons
+ */
+async function pagination(interaction, embeds) {
+  let allbuttons = new ActionRowBuilder().addComponents([
+    new ButtonBuilder().setStyle(2).setCustomId("0").setLabel("<<"),
+    new ButtonBuilder().setStyle(2).setCustomId("1").setLabel("<"),
+    new ButtonBuilder().setStyle(2).setCustomId("2").setLabel("x"),
+    new ButtonBuilder().setStyle(2).setCustomId("3").setLabel(">"),
+    new ButtonBuilder().setStyle(2).setCustomId("4").setLabel(">>"),
+  ]);
+  // send message if embeds is 1
+  if (embeds.length === 1) {
+    if (interaction.deferred) {
+      return interaction.followUp({
+        embeds: [embeds[0]],
+      });
+    } else {
+      return interaction.reply({
+        embeds: [embeds[0]],
+        fetchReply: true,
+      });
+    }
+  }
+
+  embeds = embeds.map((embed, index) => {
+    return embed.setFooter({
+      text: `Page ${index + 1}/${embeds.length} - Expert help menu`,
+      iconURL: interaction.guild.iconURL({ dynamic: true }),
+    });
+  });
+
+  let sendMsg;
+  if (interaction.deferred) {
+    sendMsg = await interaction.followUp({
+      embeds: [embeds[0]],
+      components: [allbuttons],
+    });
+  } else {
+    sendMsg = await interaction.reply({
+      embeds: [embeds[0]],
+      components: [allbuttons],
+    });
+  }
+
+  let filter = (m) => m.member.id === interaction.member.id;
+
+  const collector = await sendMsg.createMessageComponentCollector({
+    filter: filter,
+    time: 30000,
+  });
+  let currentPage = 0;
+  collector.on("collect", async (b) => {
+    if (b.isButton()) {
+      await b.deferUpdate().catch((e) => null);
+      // page first
+      switch (b.customId) {
+        case "0":
+          {
+            if (currentPage != 0) {
+              currentPage = 0;
+              await sendMsg
+                .edit({
+                  embeds: [embeds[currentPage]],
+                  components: [allbuttons],
+                })
+                .catch((e) => null);
+            }
+          }
+          break;
+        case "1":
+          {
+            if (currentPage != 0) {
+              currentPage -= 1;
+              await sendMsg
+                .edit({
+                  embeds: [embeds[currentPage]],
+                  components: [allbuttons],
+                })
+                .catch((e) => null);
+            } else {
+              currentPage = embeds.length - 1;
+              await sendMsg
+                .edit({
+                  embeds: [embeds[currentPage]],
+                  components: [allbuttons],
+                })
+                .catch((e) => null);
+            }
+          }
+          break;
+        case "2":
+          {
+            allbuttons.components.forEach((btn) => btn.setDisabled(true));
+            await sendMsg
+              .edit({
+                embeds: [embeds[currentPage]],
+                components: [allbuttons],
+              })
+              .catch((e) => null);
+          }
+          break;
+        case "3":
+          {
+            if (currentPage < embeds.length - 1) {
+              currentPage++;
+              await sendMsg
+                .edit({
+                  embeds: [embeds[currentPage]],
+                  components: [allbuttons],
+                })
+                .catch((e) => null);
+            } else {
+              currentPage = 0;
+              await sendMsg
+                .edit({
+                  embeds: [embeds[currentPage]],
+                  components: [allbuttons],
+                })
+                .catch((e) => null);
+            }
+          }
+          break;
+        case "4":
+          {
+            currentPage = embeds.length - 1;
+            await sendMsg
+              .edit({
+                embeds: [embeds[currentPage]],
+                components: [allbuttons],
+              })
+              .catch((e) => null);
+          }
+          break;
+
+        default:
+          break;
+      }
+    }
+  });
+
+  collector.on("end", async () => {
+    allbuttons.components.forEach((btn) => btn.setDisabled(true));
+    await sendMsg
+      .edit({
+        embeds: [embeds[currentPage]],
+        components: [allbuttons],
+      })
+      .catch((e) => null);
+  });
+}
+// server icon
+client.on('messageCreate', async (message) => {
+  if (!message.guild || message.author.bot) return;
+
+  const args = message.content.trim().split(/ +/);
+  const command = args.shift().toLowerCase();
+
+  if (command === '?servericon') {
+    const embed = new EmbedBuilder()
+      .setColor('#3498db')
+      .setTitle(`Icon of ${message.guild.name}`)
+      .setImage(message.guild.iconURL({ dynamic: true, size: 4096 }))
+      .setTimestamp();
+
+    message.channel.send({ embeds: [embed] });
+  }
+});
+//
 client.on('messageCreate', async (message) => {
   if (message.author.bot) return;
 
